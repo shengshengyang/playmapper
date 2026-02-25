@@ -1,0 +1,82 @@
+# Docker Compose - 完整版（包含 PostgreSQL）
+# 使用方式: docker-compose -f docker-compose.full.yml up -d
+
+services:
+  # PostgreSQL 資料庫
+  postgres:
+    image: postgis/postgis:14-3.3-alpine
+    container_name: family-map-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: family_map
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d family_map"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - family-map-network
+
+  # Spring Boot 後端
+  backend:
+    build:
+      context: ./family-map-backend
+      dockerfile: Dockerfile
+    container_name: family-map-backend
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/family_map
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-postgres123}
+      JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-please-change-in-production-environment}
+      JAVA_OPTS: -Xms256m -Xmx512m
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - family-map-network
+
+  # Vue 3 前端（使用者端）
+  frontend:
+    build:
+      context: ./family-map-frontend
+      dockerfile: Dockerfile
+    container_name: family-map-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - family-map-network
+
+  # Vue 3 管理後台
+  admin:
+    build:
+      context: ./family-map-admin
+      dockerfile: Dockerfile
+    container_name: family-map-admin
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    depends_on:
+      - backend
+    networks:
+      - family-map-network
+
+networks:
+  family-map-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
