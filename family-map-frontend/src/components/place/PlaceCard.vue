@@ -1,47 +1,69 @@
 <template>
   <div
-    class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer overflow-hidden"
+    class="card-hover cursor-pointer overflow-hidden"
     @click="$emit('click', place)"
   >
-    <div class="relative h-40 bg-gray-200">
+    <!-- 圖片區域 -->
+    <div class="relative h-36 bg-neutral-100">
       <img
         v-if="place.images && place.images.length > 0"
         :src="place.images[0]"
         :alt="place.name"
         class="w-full h-full object-cover"
       />
-      <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
-        <span class="text-4xl">🏞️</span>
+      <div v-else class="w-full h-full flex items-center justify-center">
+        <Image class="w-8 h-8 text-neutral-300" />
       </div>
-      <div class="absolute top-2 right-2 bg-white px-2 py-1 rounded-full text-sm font-medium">
-        {{ place.rating?.toFixed(1) || 'N/A' }} ★
+
+      <!-- 評分標籤 -->
+      <div v-if="place.rating" class="absolute top-2.5 right-2.5 bg-white/95 px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
+        <Star class="w-3 h-3 text-amber-500 fill-amber-500" />
+        <span class="text-xs font-semibold text-neutral-700">{{ place.rating.toFixed(1) }}</span>
       </div>
     </div>
 
-    <div class="p-4">
-      <h3 class="font-bold text-lg text-gray-800 truncate">{{ place.name }}</h3>
-      <p class="text-gray-500 text-sm mt-1 truncate">{{ place.address }}</p>
+    <!-- 內容區域 -->
+    <div class="p-3.5">
+      <!-- 景點名稱 -->
+      <h3 class="font-semibold text-neutral-800 truncate">
+        {{ place.name }}
+      </h3>
 
-      <div class="flex items-center mt-3 text-sm">
-        <span class="bg-primary-100 text-primary-700 px-2 py-1 rounded">
-          {{ place.minAge || 0 }}-{{ place.maxAge || 18 }} 歲
-        </span>
-        <span class="ml-auto text-gray-400">
-          {{ place.suggestedDurationMinutes || 60 }} 分鐘
-        </span>
+      <!-- 地址 -->
+      <p class="text-neutral-500 text-sm mt-1 truncate flex items-center gap-1">
+        <MapPin class="w-3.5 h-3.5 flex-shrink-0" />
+        <span class="truncate">{{ place.address || '尚未提供地址' }}</span>
+      </p>
+
+      <!-- 資訊標籤 -->
+      <div class="flex items-center justify-between mt-3">
+        <!-- 適合年齡 -->
+        <div class="flex items-center gap-1.5">
+          <Users class="w-3.5 h-3.5 text-neutral-400" />
+          <span class="badge-neutral text-xs">
+            {{ place.minAge || 0 }}-{{ place.maxAge || 18 }} 歲
+          </span>
+        </div>
+
+        <!-- 建議時間 -->
+        <div class="flex items-center gap-1 text-neutral-400 text-xs">
+          <Clock class="w-3.5 h-3.5" />
+          <span>{{ place.suggestedDurationMinutes || 60 }} 分鐘</span>
+        </div>
       </div>
 
-      <div v-if="place.facilities && place.facilities.length > 0" class="flex flex-wrap gap-1 mt-3">
+      <!-- 設施標籤 -->
+      <div v-if="place.facilities && place.facilities.length > 0" class="flex flex-wrap gap-1.5 mt-3">
         <span
           v-for="facility in place.facilities.slice(0, 3)"
           :key="facility"
-          class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded"
+          class="badge-neutral text-xs"
         >
           {{ facility }}
         </span>
         <span
           v-if="place.facilities.length > 3"
-          class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded"
+          class="badge-neutral text-xs"
         >
           +{{ place.facilities.length - 3 }}
         </span>
@@ -51,6 +73,8 @@
 </template>
 
 <script setup>
+import { Image, Star, MapPin, Users, Clock } from 'lucide-vue-next'
+
 defineProps({
   place: {
     type: Object,

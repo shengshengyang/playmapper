@@ -4,6 +4,7 @@ import com.familymap.model.dto.CreatePlaceRequest;
 import com.familymap.model.dto.PlaceDTO;
 import com.familymap.model.entity.Place;
 import com.familymap.service.PlaceService;
+import com.familymap.util.GeometryHelper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -97,8 +98,7 @@ public class PlaceController {
             .name(request.getName())
             .description(request.getDescription())
             .address(request.getAddress())
-            .latitude(request.getLatitude())
-            .longitude(request.getLongitude())
+            .location(GeometryHelper.createPoint(request.getLongitude(), request.getLatitude()))
             .minAge(request.getMinAge())
             .maxAge(request.getMaxAge())
             .suggestedDurationMinutes(request.getSuggestedDurationMinutes())
@@ -121,8 +121,7 @@ public class PlaceController {
             .name(request.getName())
             .description(request.getDescription())
             .address(request.getAddress())
-            .latitude(request.getLatitude())
-            .longitude(request.getLongitude())
+            .location(GeometryHelper.createPoint(request.getLongitude(), request.getLatitude()))
             .minAge(request.getMinAge())
             .maxAge(request.getMaxAge())
             .suggestedDurationMinutes(request.getSuggestedDurationMinutes())
@@ -151,8 +150,8 @@ public class PlaceController {
             .name(place.getName())
             .description(place.getDescription())
             .address(place.getAddress())
-            .latitude(place.getLatitude())
-            .longitude(place.getLongitude())
+            .latitude(GeometryHelper.getLatitude(place.getLocation()))
+            .longitude(GeometryHelper.getLongitude(place.getLocation()))
             .minAge(place.getMinAge())
             .maxAge(place.getMaxAge())
             .suggestedDurationMinutes(place.getSuggestedDurationMinutes())

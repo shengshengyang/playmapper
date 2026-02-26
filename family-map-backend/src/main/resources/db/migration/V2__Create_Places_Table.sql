@@ -18,7 +18,6 @@ CREATE TABLE places (
     ticket_price DECIMAL(10,2),
     phone VARCHAR(20),
     website VARCHAR(500),
-    images TEXT[],
     rating DECIMAL(3,2) DEFAULT 0,
     review_count INT DEFAULT 0,
     status VARCHAR(20) DEFAULT 'pending',

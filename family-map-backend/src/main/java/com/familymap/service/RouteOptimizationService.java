@@ -1,6 +1,7 @@
 package com.familymap.service;
 
 import com.familymap.model.entity.Place;
+import com.familymap.util.GeometryHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -96,14 +97,13 @@ public class RouteOptimizationService {
     }
 
     public double calculateDistance(Place from, Place to) {
-        if (from.getLatitude() == null || from.getLongitude() == null ||
-            to.getLatitude() == null || to.getLongitude() == null) {
+        if (from.getLocation() == null || to.getLocation() == null) {
             return 0.0;
         }
 
         return haversineDistance(
-            from.getLatitude(), from.getLongitude(),
-            to.getLatitude(), to.getLongitude()
+            GeometryHelper.getLatitude(from.getLocation()), GeometryHelper.getLongitude(from.getLocation()),
+            GeometryHelper.getLatitude(to.getLocation()), GeometryHelper.getLongitude(to.getLocation())
         );
     }
 

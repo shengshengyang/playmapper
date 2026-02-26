@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.locationtech.jts.geom.Point;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -33,11 +34,8 @@ public class Place {
     @Column(length = 500)
     private String address;
 
-    @Column(nullable = false)
-    private Double latitude;
-
-    @Column(nullable = false)
-    private Double longitude;
+    @Column(nullable = false, columnDefinition = "GEOGRAPHY(POINT, 4326)")
+    private Point location;
 
     @Column(name = "min_age")
     @Builder.Default

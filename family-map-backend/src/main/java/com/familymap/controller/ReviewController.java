@@ -5,6 +5,7 @@ import com.familymap.model.entity.Place;
 import com.familymap.model.entity.PlaceReview;
 import com.familymap.service.PlaceService;
 import com.familymap.service.ReviewService;
+import com.familymap.util.GeometryHelper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -73,8 +74,8 @@ public class ReviewController {
             .name(place.getName())
             .description(place.getDescription())
             .address(place.getAddress())
-            .latitude(place.getLatitude())
-            .longitude(place.getLongitude())
+            .latitude(GeometryHelper.getLatitude(place.getLocation()))
+            .longitude(GeometryHelper.getLongitude(place.getLocation()))
             .minAge(place.getMinAge())
             .maxAge(place.getMaxAge())
             .suggestedDurationMinutes(place.getSuggestedDurationMinutes())
