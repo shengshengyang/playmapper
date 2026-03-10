@@ -3,7 +3,7 @@
     <div class="bg-white rounded-xl shadow-sm">
       <div class="p-6 border-b">
         <h2 class="text-xl font-bold text-gray-800">
-          {{ isEdit ? '編輯景點' : '新增景點' }}
+          {{ isEdit ? '編輯設施點' : '新增設施點' }}
         </h2>
       </div>
 
@@ -15,7 +15,7 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="md:col-span-2">
               <label class="block text-sm font-medium text-gray-700 mb-1">
-                景點名稱 <span class="text-red-500">*</span>
+                設施點名稱 <span class="text-red-500">*</span>
               </label>
               <input
                 v-model="form.name"
@@ -23,19 +23,32 @@
                 required
                 maxlength="200"
                 class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                placeholder="請輸入景點名稱"
+                placeholder="請輸入設施點名稱"
               />
             </div>
 
             <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-1">景點描述</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">設施描述</label>
               <textarea
                 v-model="form.description"
                 rows="4"
                 maxlength="2000"
                 class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                placeholder="請輸入景點描述"
+                placeholder="請輸入設施描述"
               ></textarea>
+            </div>
+
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">設施類型 <span class="text-red-500">*</span></label>
+              <select
+                v-model="form.infrastructureType"
+                required
+                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="">請選擇</option>
+                <option v-for="type in infrastructureTypeOptions" :key="type" :value="type">{{ type }}</option>
+              </select>
             </div>
 
             <div class="md:col-span-2">
@@ -245,6 +258,7 @@ const loading = ref(false)
 
 const form = reactive({
   name: '',
+  infrastructureType: '',
   description: '',
   address: '',
   latitude: null,
@@ -258,6 +272,8 @@ const form = reactive({
   facilities: [],
   status: 'approved'
 })
+
+const infrastructureTypeOptions = ['親子廁所', '尿布台', '哺乳室', '無障礙廁所', '休息區']
 
 const facilityOptions = [
   '遊樂場',
@@ -284,6 +300,7 @@ onMounted(async () => {
     if (place) {
       Object.assign(form, {
         name: place.name || '',
+        infrastructureType: place.infrastructureType || '',
         description: place.description || '',
         address: place.address || '',
         latitude: place.latitude,
@@ -302,7 +319,8 @@ onMounted(async () => {
     // 模擬資料
     if (route.params.id === '1') {
       Object.assign(form, {
-        name: '國立自然科學博物館',
+        name: '科博館親子廁所',
+        infrastructureType: '親子廁所',
         description: '台中國立自然科學博物館是一個非常適合親子同遊的景點...',
         address: '台中市北區館前路1號',
         latitude: 24.1578,
@@ -334,7 +352,7 @@ async function handleSubmit() {
     // 模擬成功
     await new Promise(resolve => setTimeout(resolve, 500))
 
-    alert(isEdit.value ? '景點已更新' : '景點已建立')
+    alert(isEdit.value ? '設施點已更新' : '設施點已建立')
     router.push('/places')
   } catch (error) {
     alert('儲存失敗，請稍後再試')

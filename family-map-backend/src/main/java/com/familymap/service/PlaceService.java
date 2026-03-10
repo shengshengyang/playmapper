@@ -55,6 +55,7 @@ public class PlaceService {
     public Place updatePlace(Long id, Place updatedPlace) {
         return placeRepository.findById(id).map(place -> {
             place.setName(updatedPlace.getName());
+            place.setInfrastructureType(updatedPlace.getInfrastructureType());
             place.setDescription(updatedPlace.getDescription());
             place.setAddress(updatedPlace.getAddress());
             place.setMinAge(updatedPlace.getMinAge());

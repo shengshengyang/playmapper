@@ -21,6 +21,10 @@ public class CreatePlaceRequest {
     @Size(max = 200, message = "名稱不能超過 200 個字元")
     private String name;
 
+    @NotBlank(message = "設施類型不能為空")
+    @Size(max = 50, message = "設施類型不能超過 50 個字元")
+    private String infrastructureType;
+
     @Size(max = 2000, message = "描述不能超過 2000 個字元")
     private String description;
 

@@ -19,13 +19,13 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/places")
 @RequiredArgsConstructor
-@Tag(name = "Place", description = "景點管理 API")
+@Tag(name = "Place", description = "地點管理 API")
 public class PlaceController {
 
     private final PlaceService placeService;
 
     @GetMapping
-    @Operation(summary = "獲取所有已審核景點")
+    @Operation(summary = "獲取所有已審核地點")
     public ResponseEntity<List<PlaceDTO>> getAllPlaces() {
         List<Place> places = placeService.findAllApproved();
         List<PlaceDTO> dtos = places.stream()
@@ -35,7 +35,7 @@ public class PlaceController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "獲取景點詳情")
+    @Operation(summary = "獲取地點詳情")
     public ResponseEntity<PlaceDTO> getPlaceById(@PathVariable Long id) {
         return placeService.findById(id)
             .map(place -> ResponseEntity.ok(convertToDTO(place)))
@@ -43,7 +43,7 @@ public class PlaceController {
     }
 
     @GetMapping("/nearby")
-    @Operation(summary = "獲取附近景點")
+    @Operation(summary = "獲取附近地點")
     public ResponseEntity<List<PlaceDTO>> getNearbyPlaces(
             @RequestParam Double lat,
             @RequestParam Double lng,
@@ -68,13 +68,13 @@ public class PlaceController {
     }
 
     @GetMapping("/search")
-    @Operation(summary = "搜尋景點")
+    @Operation(summary = "搜尋地點")
     public ResponseEntity<List<PlaceDTO>> searchPlaces(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer age,
             @RequestParam(required = false) String facility) {
 
-        // 基本實作：返回所有已審核景點
+        // 基本實作：返回所有已審核地點
         // TODO: 實作完整的搜尋邏輯
         List<Place> places = placeService.findAllApproved();
 
@@ -92,10 +92,11 @@ public class PlaceController {
     }
 
     @PostMapping
-    @Operation(summary = "提交新景點")
+    @Operation(summary = "提交新地點")
     public ResponseEntity<PlaceDTO> createPlace(@Valid @RequestBody CreatePlaceRequest request) {
         Place place = Place.builder()
             .name(request.getName())
+            .infrastructureType(request.getInfrastructureType())
             .description(request.getDescription())
             .address(request.getAddress())
             .location(GeometryHelper.createPoint(request.getLongitude(), request.getLatitude()))
@@ -115,10 +116,11 @@ public class PlaceController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "更新景點（管理員）")
+    @Operation(summary = "更新地點（管理員）")
     public ResponseEntity<PlaceDTO> updatePlace(@PathVariable Long id, @Valid @RequestBody CreatePlaceRequest request) {
         Place place = Place.builder()
             .name(request.getName())
+            .infrastructureType(request.getInfrastructureType())
             .description(request.getDescription())
             .address(request.getAddress())
             .location(GeometryHelper.createPoint(request.getLongitude(), request.getLatitude()))
@@ -138,7 +140,7 @@ public class PlaceController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "刪除景點（管理員）")
+    @Operation(summary = "刪除地點（管理員）")
     public ResponseEntity<Void> deletePlace(@PathVariable Long id) {
         placeService.deletePlace(id);
         return ResponseEntity.noContent().build();
@@ -148,6 +150,7 @@ public class PlaceController {
         return PlaceDTO.builder()
             .id(place.getId())
             .name(place.getName())
+            .infrastructureType(place.getInfrastructureType())
             .description(place.getDescription())
             .address(place.getAddress())
             .latitude(GeometryHelper.getLatitude(place.getLocation()))

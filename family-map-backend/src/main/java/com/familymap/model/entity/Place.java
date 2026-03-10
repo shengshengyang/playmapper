@@ -28,6 +28,10 @@ public class Place {
     @Column(nullable = false, length = 200)
     private String name;
 
+    @Column(name = "infrastructure_type", nullable = false, length = 50)
+    @Builder.Default
+    private String infrastructureType = "general";
+
     @Column(columnDefinition = "TEXT")
     private String description;
 
