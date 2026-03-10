@@ -50,14 +50,14 @@
 
       <!-- 資訊卡片 -->
       <div class="grid grid-cols-2 gap-3 mt-5">
-        <!-- 適合年齡 -->
+        <!-- 設施類型 -->
         <div class="bg-neutral-50 rounded-xl p-3">
           <div class="flex items-center gap-2 mb-1.5">
             <Users class="w-4 h-4 text-primary-500" />
-            <span class="text-xs text-neutral-500 font-medium">適合年齡</span>
+            <span class="text-xs text-neutral-500 font-medium">設施類型</span>
           </div>
           <p class="text-sm font-semibold text-neutral-700">
-            {{ place.minAge || 0 }} - {{ place.maxAge || 18 }} 歲
+            {{ place.infrastructureType || "一般設施" }}
           </p>
         </div>
 

@@ -15,6 +15,7 @@ public class PlaceDTO {
 
     private Long id;
     private String name;
+    private String infrastructureType;
     private String description;
     private String address;
     private Double latitude;

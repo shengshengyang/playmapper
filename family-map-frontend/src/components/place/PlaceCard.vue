@@ -24,10 +24,11 @@
 
     <!-- 內容區域 -->
     <div class="p-3.5">
-      <!-- 景點名稱 -->
+      <!-- 設施點名稱 -->
       <h3 class="font-semibold text-neutral-800 truncate">
         {{ place.name }}
       </h3>
+      <p class="text-primary-600 text-xs mt-1">{{ place.infrastructureType || "一般設施" }}</p>
 
       <!-- 地址 -->
       <p class="text-neutral-500 text-sm mt-1 truncate flex items-center gap-1">
@@ -37,11 +38,11 @@
 
       <!-- 資訊標籤 -->
       <div class="flex items-center justify-between mt-3">
-        <!-- 適合年齡 -->
+        <!-- 設施類型 -->
         <div class="flex items-center gap-1.5">
           <Users class="w-3.5 h-3.5 text-neutral-400" />
           <span class="badge-neutral text-xs">
-            {{ place.minAge || 0 }}-{{ place.maxAge || 18 }} 歲
+            {{ place.infrastructureType || "一般設施" }}
           </span>
         </div>
 

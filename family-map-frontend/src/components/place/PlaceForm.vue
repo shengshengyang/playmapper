@@ -2,7 +2,7 @@
   <form @submit.prevent="handleSubmit" class="space-y-4">
     <div>
       <label class="block text-sm font-medium text-gray-700 mb-1">
-        景點名稱 <span class="text-red-500">*</span>
+設施點名稱 <span class="text-red-500">*</span>
       </label>
       <input
         v-model="form.name"
@@ -10,19 +10,32 @@
         required
         maxlength="200"
         class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-        placeholder="請輸入景點名稱"
+        placeholder="請輸入設施點名稱"
       />
     </div>
 
     <div>
-      <label class="block text-sm font-medium text-gray-700 mb-1">景點描述</label>
+      <label class="block text-sm font-medium text-gray-700 mb-1">設施描述</label>
       <textarea
         v-model="form.description"
         rows="3"
         maxlength="2000"
         class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-        placeholder="請輸入景���描述"
+        placeholder="請輸入設施描述"
       ></textarea>
+    </div>
+
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">設施類型 <span class="text-red-500">*</span></label>
+      <select
+        v-model="form.infrastructureType"
+        required
+        class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+      >
+        <option value="">請選擇設施類型</option>
+        <option v-for="type in infrastructureTypeOptions" :key="type" :value="type">{{ type }}</option>
+      </select>
     </div>
 
     <div>
@@ -171,6 +184,7 @@ const emit = defineEmits(['submit', 'cancel'])
 
 const form = reactive({
   name: '',
+  infrastructureType: '',
   description: '',
   address: '',
   latitude: null,
@@ -184,6 +198,8 @@ const form = reactive({
   facilities: [],
   images: []
 })
+
+const infrastructureTypeOptions = ['親子廁所', '尿布台', '哺乳室', '無障礙廁所', '休息區']
 
 const facilityOptions = [
   '遊樂場',

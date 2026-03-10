@@ -4,8 +4,8 @@
     <div class="w-80 bg-white border-r border-neutral-200/60 flex flex-col">
       <!-- 標題區 -->
       <div class="p-4 border-b border-neutral-100">
-        <h2 class="section-title">景點探索</h2>
-        <p class="text-sm text-neutral-500 mt-0.5">發現適合親子同遊的好去處</p>
+        <h2 class="section-title">親子基礎設施地圖</h2>
+        <p class="text-sm text-neutral-500 mt-0.5">先建立可用點位，AI 規劃將在下一階段推出</p>
       </div>
 
       <!-- 搜尋和篩選 -->
@@ -16,7 +16,7 @@
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="搜尋景點名稱或地址..."
+            placeholder="搜尋設施名稱或地址..."
             class="input pl-9"
           />
           <button
@@ -28,17 +28,15 @@
           </button>
         </div>
 
-        <!-- 年齡篩選 -->
-        <AgeFilter
-          v-model:min-age="minAge"
-          v-model:max-age="maxAge"
-          @change="handleAgeChange"
-        />
+        <select v-model="selectedFacilityType" class="input">
+          <option value="">全部設施類型</option>
+          <option v-for="type in facilityTypes" :key="type" :value="type">{{ type }}</option>
+        </select>
 
         <!-- 搜尋結果數量 -->
         <div class="flex items-center justify-between text-sm pt-1">
           <span class="text-neutral-500">
-            找到 <span class="font-semibold text-neutral-700">{{ filteredPlaces.length }}</span> 個景點
+            找到 <span class="font-semibold text-neutral-700">{{ filteredPlaces.length }}</span> 個設施點
           </span>
         </div>
       </div>
@@ -49,7 +47,7 @@
           <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-neutral-100 flex items-center justify-center">
             <Search class="w-5 h-5 text-neutral-400" />
           </div>
-          <p class="text-neutral-500 text-sm">沒有找到符合條件的景點</p>
+          <p class="text-neutral-500 text-sm">沒有找到符合條件的設施點</p>
           <button
             @click="resetFilters"
             class="mt-2 text-sm text-primary-600 hover:text-primary-700 font-medium"
@@ -102,7 +100,7 @@
         class="absolute bottom-5 right-5 btn-primary shadow-md"
       >
         <Plus class="w-4 h-4" />
-        <span>新增景點</span>
+        <span>新增設施點</span>
       </button>
     </div>
 
@@ -135,8 +133,8 @@
                 <Plus class="w-4 h-4 text-primary-600" />
               </div>
               <div>
-                <h2 class="text-base font-semibold text-neutral-800">新增景點</h2>
-                <p class="text-xs text-neutral-500">分享一個適合親子同遊的好去處</p>
+                <h2 class="text-base font-semibold text-neutral-800">新增設施點</h2>
+                <p class="text-xs text-neutral-500">先累積親子設施點位，再串接 AI 規劃</p>
               </div>
             </div>
             <button
@@ -177,7 +175,6 @@ import MapContainer from '@/components/map/MapContainer.vue'
 import PlaceCard from '@/components/place/PlaceCard.vue'
 import PlaceDetail from '@/components/place/PlaceDetail.vue'
 import PlaceForm from '@/components/place/PlaceForm.vue'
-import AgeFilter from '@/components/place/AgeFilter.vue'
 import { usePlacesStore } from '@/stores/placesStore'
 import { usePlannerStore } from '@/stores/plannerStore'
 
@@ -186,12 +183,12 @@ const plannerStore = usePlannerStore()
 
 const mapRef = ref(null)
 const searchQuery = ref('')
-const minAge = ref(0)
-const maxAge = ref(18)
+const selectedFacilityType = ref('')
 const selectedPlace = ref(null)
 const showAddPlaceModal = ref(false)
 const showNotification = ref(false)
 const notificationMessage = ref('')
+const facilityTypes = ['親子廁所', '尿布台', '哺乳室', '無障礙廁所', '兒童遊戲區', '休息區']
 
 const mapCenter = ref([24.1477, 120.6736])
 
@@ -211,18 +208,14 @@ const filteredPlaces = computed(() => {
     )
   }
 
-  // 年齡篩選
-  places = places.filter(place =>
-    place.minAge <= maxAge.value && place.maxAge >= minAge.value
-  )
+  if (selectedFacilityType.value) {
+    places = places.filter(place =>
+      place.facilities?.includes(selectedFacilityType.value)
+    )
+  }
 
   return places
 })
-
-function handleAgeChange({ minAge: min, maxAge: max }) {
-  minAge.value = min
-  maxAge.value = max
-}
 
 function selectPlace(place) {
   selectedPlace.value = place
@@ -234,14 +227,14 @@ function selectPlace(place) {
 function addToPlan(place) {
   plannerStore.addPlace(place)
   selectedPlace.value = null
-  showNotificationMessage(`已將「${place.name}」加入行程`)
+  showNotificationMessage(`已收藏「${place.name}」`)
 }
 
 async function submitNewPlace(data) {
   try {
     console.log('Submitting new place:', data)
     showAddPlaceModal.value = false
-    showNotificationMessage('景點已提交，等待審核')
+    showNotificationMessage('設施點已提交，等待審核')
   } catch (error) {
     console.error('Error submitting place:', error)
   }
@@ -257,8 +250,7 @@ function showNotificationMessage(message) {
 
 function resetFilters() {
   searchQuery.value = ''
-  minAge.value = 0
-  maxAge.value = 18
+  selectedFacilityType.value = ''
 }
 
 function centerMap() {
