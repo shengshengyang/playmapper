@@ -32,7 +32,8 @@
 - Flyway (資料庫遷移)
 
 ### 前端
-- Vue 3 + Vite
+- Vue 3 + Vite（既有版本）
+- Flutter（新版本，位於 `family-map-flutter/`）
 - Vue Router + Pinia
 - Tailwind CSS
 - Leaflet (地圖)
@@ -153,6 +154,11 @@ playmaker/
 │   ├── Dockerfile
 │   ├── nginx.conf
 │   └── package.json
+│
+├── family-map-flutter/       # Flutter 前端（跨平台地圖：Android/Web Mapbox、iOS MapKit）
+│   ├── lib/
+│   ├── pubspec.yaml
+│   └── README.md
 │
 ├── family-map-admin/         # 管理後台
 │   ├── src/
