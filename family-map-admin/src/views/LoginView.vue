@@ -100,6 +100,7 @@ async function handleLogin() {
     // 模擬登入（開發階段）
     if (form.username === 'admin' && form.password === 'admin123') {
       localStorage.setItem('admin_token', 'mock-jwt-token')
+      authStore.token = 'mock-jwt-token'
       authStore.user = { username: 'admin', role: 'admin' }
       router.push('/dashboard')
       return

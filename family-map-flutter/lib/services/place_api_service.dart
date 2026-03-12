@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../models/place.dart';
 
@@ -7,7 +9,7 @@ class PlaceApiService {
       : _dio = dio ??
             Dio(
               BaseOptions(
-                baseUrl: baseUrl ?? const String.fromEnvironment('API_BASE_URL', defaultValue: 'http://localhost:8080'),
+                baseUrl: baseUrl ?? dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080',
                 connectTimeout: const Duration(seconds: 10),
                 receiveTimeout: const Duration(seconds: 10),
               ),
@@ -16,13 +18,31 @@ class PlaceApiService {
   final Dio _dio;
 
   Future<List<Place>> fetchPlaces() async {
-    final response = await _dio.get<List<dynamic>>('/places');
-    final data = response.data ?? [];
+    try {
+      debugPrint('Fetching places from: ${_dio.options.baseUrl}/places');
+      final response = await _dio.get<dynamic>('/places');
+      debugPrint('Response status: ${response.statusCode}');
+      debugPrint('Response data type: ${response.data.runtimeType}');
+      debugPrint('Response data: ${response.data}');
 
-    return data
-        .whereType<Map<String, dynamic>>()
-        .map(Place.fromJson)
-        .where((place) => place.latitude != 0 && place.longitude != 0)
-        .toList();
+      final List<dynamic> data;
+      if (response.data is List) {
+        data = response.data as List<dynamic>;
+      } else if (response.data is Map && response.data['data'] != null) {
+        data = response.data['data'] as List<dynamic>;
+      } else {
+        data = [];
+      }
+
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(Place.fromJson)
+          .where((place) => place.latitude != 0 && place.longitude != 0)
+          .toList();
+    } on DioException catch (e) {
+      debugPrint('DioException: ${e.type} - ${e.message}');
+      debugPrint('Response: ${e.response?.data}');
+      rethrow;
+    }
   }
 }

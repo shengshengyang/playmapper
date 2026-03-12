@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../models/place.dart';
 import '../services/place_api_service.dart';
@@ -14,7 +15,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final _apiService = PlaceApiService();
   final _searchController = TextEditingController();
-  final _mapboxToken = const String.fromEnvironment('MAPBOX_ACCESS_TOKEN');
+  String get _mapboxToken => dotenv.env['MAPBOX_ACCESS_TOKEN'] ?? '';
 
   List<Place> _places = const [];
   bool _loading = true;
@@ -43,6 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final data = await _apiService.fetchPlaces();
       setState(() => _places = data);
     } catch (e) {
+      debugPrint('載入點位失敗: $e');
       setState(() => _error = '載入點位失敗：$e');
     } finally {
       setState(() => _loading = false);

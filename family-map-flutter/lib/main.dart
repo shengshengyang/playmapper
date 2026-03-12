@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'screens/home_screen.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await dotenv.load(fileName: '.env');
+    debugPrint('.env loaded successfully');
+    debugPrint('API_BASE_URL: ${dotenv.env['API_BASE_URL']}');
+  } catch (e) {
+    debugPrint('Failed to load .env: $e');
+  }
   runApp(const FamilyMapApp());
 }
 
