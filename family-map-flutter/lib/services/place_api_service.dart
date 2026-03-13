@@ -17,10 +17,11 @@ class PlaceApiService {
 
   final Dio _dio;
 
-  Future<List<Place>> fetchPlaces() async {
+  Future<List<Place>> fetchPlaces({bool includeAllStatus = false}) async {
     try {
-      debugPrint('Fetching places from: ${_dio.options.baseUrl}/places');
-      final response = await _dio.get<dynamic>('/places');
+      final endpoint = includeAllStatus ? '/places/all' : '/places';
+      debugPrint('Fetching places from: ${_dio.options.baseUrl}$endpoint');
+      final response = await _dio.get<dynamic>(endpoint);
       debugPrint('Response status: ${response.statusCode}');
       debugPrint('Response data type: ${response.data.runtimeType}');
       debugPrint('Response data: ${response.data}');
@@ -45,4 +46,36 @@ class PlaceApiService {
       rethrow;
     }
   }
+
+  Future<Place> submitPlace({
+    required String name,
+    required String infrastructureType,
+    required double latitude,
+    required double longitude,
+    String? address,
+    String? description,
+  }) async {
+    final response = await _dio.post<dynamic>(
+      '/places',
+      data: {
+        'name': name,
+        'infrastructureType': infrastructureType,
+        'description': description,
+        'address': address,
+        'latitude': latitude,
+        'longitude': longitude,
+      },
+    );
+
+    final payload = response.data;
+    if (payload is Map<String, dynamic>) {
+      return Place.fromJson(payload);
+    }
+    throw DioException(
+      requestOptions: response.requestOptions,
+      response: response,
+      error: 'Unexpected response payload for submitPlace',
+    );
+  }
+
 }

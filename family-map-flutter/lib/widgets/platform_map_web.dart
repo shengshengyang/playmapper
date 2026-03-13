@@ -37,7 +37,7 @@ Widget buildPlatformMap(
 }
 
 Marker _buildPlaceMarker(Place place, {required ValueChanged<Place> onPlaceTap, bool isSelected = false}) {
-  final color = _getMarkerColor(place.infrastructureType);
+  final color = place.isPending ? Colors.grey : _getMarkerColor(place.infrastructureType);
 
   return Marker(
     point: LatLng(place.latitude, place.longitude),

@@ -10,6 +10,7 @@ class Place {
     this.facilities = const [],
     this.minAge,
     this.maxAge,
+    this.status = 'approved',
   });
 
   final int id;
@@ -22,6 +23,9 @@ class Place {
   final List<String> facilities;
   final int? minAge;
   final int? maxAge;
+  final String status;
+
+  bool get isPending => status.toLowerCase() == 'pending';
 
   factory Place.fromJson(Map<String, dynamic> json) {
     return Place(
@@ -35,6 +39,7 @@ class Place {
       facilities: (json['facilities'] as List?)?.map((e) => '$e').toList() ?? const [],
       minAge: json['minAge'] as int?,
       maxAge: json['maxAge'] as int?,
+      status: json['status'] as String? ?? 'approved',
     );
   }
 }

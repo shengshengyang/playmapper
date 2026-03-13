@@ -66,7 +66,7 @@ Widget _buildOpenStreetMap(List<Place> places, Place? focusPlace, ValueChanged<P
                   onTap: () => onPlaceTap(place),
                   child: Icon(
                     _iconForType(place.infrastructureType),
-                    color: focusPlace?.id == place.id ? Colors.deepOrange : Colors.red,
+                    color: place.isPending ? Colors.grey : (focusPlace?.id == place.id ? Colors.deepOrange : Colors.red),
                     size: 32,
                   ),
                 ),
