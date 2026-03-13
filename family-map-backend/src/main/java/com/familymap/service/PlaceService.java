@@ -20,6 +20,7 @@ public class PlaceService {
 
     private final PlaceRepository placeRepository;
     private final RatingRepository ratingRepository;
+    private final InfrastructureTypeService infrastructureTypeService;
 
     public List<Place> findAllApproved() {
         return placeRepository.findByStatus("approved");
@@ -45,6 +46,9 @@ public class PlaceService {
 
     @Transactional
     public Place createPlace(Place place) {
+        String normalizedType = place.getInfrastructureType() == null ? "" : place.getInfrastructureType().trim();
+        infrastructureTypeService.validateActiveTypeOrThrow(normalizedType);
+        place.setInfrastructureType(normalizedType);
         place.setStatus("pending");
         Place savedPlace = placeRepository.save(place);
         log.info("Created new place: {} with status: pending", savedPlace.getName());
@@ -53,6 +57,9 @@ public class PlaceService {
 
     @Transactional
     public Place updatePlace(Long id, Place updatedPlace) {
+        String normalizedType = updatedPlace.getInfrastructureType() == null ? "" : updatedPlace.getInfrastructureType().trim();
+        infrastructureTypeService.validateActiveTypeOrThrow(normalizedType);
+        updatedPlace.setInfrastructureType(normalizedType);
         return placeRepository.findById(id).map(place -> {
             place.setName(updatedPlace.getName());
             place.setInfrastructureType(updatedPlace.getInfrastructureType());

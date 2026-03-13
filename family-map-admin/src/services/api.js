@@ -51,6 +51,16 @@ export const placesApi = {
   getAllStatus: () => api.get('/places/all')
 }
 
+
+// 設施類型 API
+export const infrastructureTypesApi = {
+  getOptions: () => api.get('/places/infrastructure-types'),
+  getAllForAdmin: () => api.get('/admin/infrastructure-types'),
+  create: (data) => api.post('/admin/infrastructure-types', data),
+  update: (id, data) => api.put(`/admin/infrastructure-types/${id}`, data),
+  delete: (id) => api.delete(`/admin/infrastructure-types/${id}`)
+}
+
 // 審核 API
 export const reviewApi = {
   getPending: () => api.get('/admin/reviews/pending'),

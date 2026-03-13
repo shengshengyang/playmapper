@@ -178,7 +178,8 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
+import { infrastructureTypesApi } from '@/services/api'
 
 const emit = defineEmits(['submit', 'cancel'])
 
@@ -199,7 +200,7 @@ const form = reactive({
   images: []
 })
 
-const infrastructureTypeOptions = ['親子廁所', '尿布台', '哺乳室', '無障礙廁所', '休息區']
+const infrastructureTypeOptions = ref([])
 
 const facilityOptions = [
   '遊樂場',
@@ -213,6 +214,18 @@ const facilityOptions = [
   '販賣部',
   '野餐區'
 ]
+
+
+
+onMounted(async () => {
+  try {
+    const { data } = await infrastructureTypesApi.getOptions()
+    infrastructureTypeOptions.value = data.map(type => type.name)
+  } catch (error) {
+    console.error('Error fetching infrastructure types:', error)
+    infrastructureTypeOptions.value = ['親子廁所', '尿布台', '哺乳室', '無障礙廁所', '休息區']
+  }
+})
 
 function handleSubmit() {
   emit('submit', { ...form })

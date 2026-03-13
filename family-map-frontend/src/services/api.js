@@ -47,6 +47,12 @@ export const placesApi = {
   delete: (id) => api.delete(`/places/${id}`)
 }
 
+
+// 設施類型 API
+export const infrastructureTypesApi = {
+  getOptions: () => api.get('/places/infrastructure-types')
+}
+
 // 行程規劃 API
 export const plannerApi = {
   optimize: (data) => api.post('/planner/optimize', data),
