@@ -61,27 +61,86 @@
                 placeholder="請輸入地址"
               />
             </div>
+          </div>
+        </div>
 
+        <!-- 位置選擇 -->
+        <div class="space-y-4">
+          <h3 class="font-medium text-gray-700 border-b pb-2">
+            位置座標
+            <span class="text-sm font-normal text-gray-500 ml-2">（可直接輸入或點擊地圖選擇）</span>
+          </h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">緯度</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">緯度 <span class="text-red-500">*</span></label>
               <input
                 v-model.number="form.latitude"
+                @input="syncMapFromInput"
                 type="number"
                 step="any"
+                required
                 class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 placeholder="24.1477"
               />
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">經度</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">經度 <span class="text-red-500">*</span></label>
               <input
                 v-model.number="form.longitude"
+                @input="syncMapFromInput"
                 type="number"
                 step="any"
+                required
                 class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 placeholder="120.6736"
               />
+            </div>
+          </div>
+
+          <!-- 地圖選擇器 -->
+          <div class="border rounded-lg overflow-hidden">
+            <div class="bg-gray-50 px-4 py-2 border-b flex items-center justify-between">
+              <span class="text-sm text-gray-600">點擊地圖選擇位置</span>
+              <div class="flex gap-2">
+                <button
+                  type="button"
+                  @click="centerOnTaiwan"
+                  class="text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded transition-colors"
+                >
+                  回到台灣
+                </button>
+                <button
+                  type="button"
+                  @click="centerOnCurrentLocation"
+                  class="text-xs px-2 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded transition-colors"
+                >
+                  我的定位
+                </button>
+              </div>
+            </div>
+            <div class="h-80 relative">
+              <l-map
+                ref="mapRef"
+                v-model:zoom="mapZoom"
+                v-model:center="mapCenter"
+                @click="onMapClick"
+                class="w-full h-full"
+              >
+                <l-tile-layer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  layer-type="base"
+                  name="OpenStreetMap"
+                  attribution="&copy; OpenStreetMap contributors"
+                />
+                <l-marker
+                  v-if="form.latitude && form.longitude"
+                  :lat-lng="[form.latitude, form.longitude]"
+                  draggable
+                  @dragend="onMarkerDrag"
+                />
+              </l-map>
             </div>
           </div>
         </div>
@@ -248,6 +307,17 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePlacesStore } from '@/stores/placesStore'
+import { LMap, LTileLayer, LMarker } from '@vue-leaflet/vue-leaflet'
+import 'leaflet/dist/leaflet.css'
+import L from 'leaflet'
+
+// 修復 Leaflet 預設 icon 問題
+delete L.Icon.Default.prototype._getIconUrl
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+})
 
 const route = useRoute()
 const router = useRouter()
@@ -255,6 +325,11 @@ const placesStore = usePlacesStore()
 
 const isEdit = computed(() => !!route.params.id)
 const loading = ref(false)
+
+// 地圖相關
+const mapRef = ref(null)
+const mapZoom = ref(12)
+const mapCenter = ref([24.1477, 120.6736]) // 預設台中市
 
 const form = reactive({
   name: '',
@@ -336,7 +411,54 @@ onMounted(async () => {
       })
     }
   }
+
+  // 如果有座標，將地圖中心移到該位置
+  if (form.latitude && form.longitude) {
+    mapCenter.value = [form.latitude, form.longitude]
+    mapZoom.value = 15
+  }
 })
+
+// 地圖相關函數
+function onMapClick(event) {
+  form.latitude = Number(event.latlng.lat.toFixed(6))
+  form.longitude = Number(event.latlng.lng.toFixed(6))
+}
+
+function onMarkerDrag(event) {
+  const latlng = event.target.getLatLng()
+  form.latitude = Number(latlng.lat.toFixed(6))
+  form.longitude = Number(latlng.lng.toFixed(6))
+}
+
+function syncMapFromInput() {
+  if (form.latitude && form.longitude) {
+    mapCenter.value = [form.latitude, form.longitude]
+  }
+}
+
+function centerOnTaiwan() {
+  mapCenter.value = [23.97565, 120.973882]
+  mapZoom.value = 8
+}
+
+function centerOnCurrentLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        mapCenter.value = [position.coords.latitude, position.coords.longitude]
+        mapZoom.value = 15
+        form.latitude = Number(position.coords.latitude.toFixed(6))
+        form.longitude = Number(position.coords.longitude.toFixed(6))
+      },
+      (error) => {
+        alert('無法獲取您的位置，請手動選擇或輸入座標')
+      }
+    )
+  } else {
+    alert('您的瀏覽器不支援地理定位功能')
+  }
+}
 
 async function handleSubmit() {
   loading.value = true
