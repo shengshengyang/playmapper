@@ -76,8 +76,7 @@
               <label class="block text-sm font-medium text-gray-700 mb-1">緯度 <span class="text-red-500">*</span></label>
               <input
                 v-model.number="form.latitude"
-                @input="syncMapFromInput"
-                type="number"
+                                type="number"
                 step="any"
                 required
                 class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
@@ -89,8 +88,7 @@
               <label class="block text-sm font-medium text-gray-700 mb-1">經度 <span class="text-red-500">*</span></label>
               <input
                 v-model.number="form.longitude"
-                @input="syncMapFromInput"
-                type="number"
+                                type="number"
                 step="any"
                 required
                 class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
@@ -99,17 +97,17 @@
             </div>
           </div>
 
-          <!-- 地圖選擇器 -->
+          <!-- 地圖輔助（避免外部地圖套件依賴問題） -->
           <div class="border rounded-lg overflow-hidden">
             <div class="bg-gray-50 px-4 py-2 border-b flex items-center justify-between">
-              <span class="text-sm text-gray-600">點擊地圖選擇位置</span>
+              <span class="text-sm text-gray-600">可用「我的定位」快速帶入座標，或前往地圖查詢</span>
               <div class="flex gap-2">
                 <button
                   type="button"
                   @click="centerOnTaiwan"
                   class="text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded transition-colors"
                 >
-                  回到台灣
+                  帶入台灣中心
                 </button>
                 <button
                   type="button"
@@ -120,27 +118,16 @@
                 </button>
               </div>
             </div>
-            <div class="h-80 relative">
-              <l-map
-                ref="mapRef"
-                v-model:zoom="mapZoom"
-                v-model:center="mapCenter"
-                @click="onMapClick"
-                class="w-full h-full"
+            <div class="p-4 text-sm text-gray-600 space-y-2">
+              <p>目前座標：{{ form.latitude || '-' }}, {{ form.longitude || '-' }}</p>
+              <a
+                class="text-blue-600 hover:underline"
+                :href="`https://www.openstreetmap.org/#map=16/${form.latitude || 23.97565}/${form.longitude || 120.973882}`"
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                <l-tile-layer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  layer-type="base"
-                  name="OpenStreetMap"
-                  attribution="&copy; OpenStreetMap contributors"
-                />
-                <l-marker
-                  v-if="form.latitude && form.longitude"
-                  :lat-lng="[form.latitude, form.longitude]"
-                  draggable
-                  @dragend="onMarkerDrag"
-                />
-              </l-map>
+                在 OpenStreetMap 開啟並查看目前座標
+              </a>
             </div>
           </div>
         </div>
@@ -307,29 +294,12 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePlacesStore } from '@/stores/placesStore'
-import { LMap, LTileLayer, LMarker } from '@vue-leaflet/vue-leaflet'
-import 'leaflet/dist/leaflet.css'
-import L from 'leaflet'
-
-// 修復 Leaflet 預設 icon 問題
-delete L.Icon.Default.prototype._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-})
-
 const route = useRoute()
 const router = useRouter()
 const placesStore = usePlacesStore()
 
 const isEdit = computed(() => !!route.params.id)
 const loading = ref(false)
-
-// 地圖相關
-const mapRef = ref(null)
-const mapZoom = ref(12)
-const mapCenter = ref([24.1477, 120.6736]) // 預設台中市
 
 const form = reactive({
   name: '',
@@ -412,42 +382,12 @@ onMounted(async () => {
     }
   }
 
-  // 如果有座標，將地圖中心移到該位置
-  if (form.latitude && form.longitude) {
-    mapCenter.value = [form.latitude, form.longitude]
-    mapZoom.value = 15
-  }
 })
-
-// 地圖相關函數
-function onMapClick(event) {
-  form.latitude = Number(event.latlng.lat.toFixed(6))
-  form.longitude = Number(event.latlng.lng.toFixed(6))
-}
-
-function onMarkerDrag(event) {
-  const latlng = event.target.getLatLng()
-  form.latitude = Number(latlng.lat.toFixed(6))
-  form.longitude = Number(latlng.lng.toFixed(6))
-}
-
-function syncMapFromInput() {
-  if (form.latitude && form.longitude) {
-    mapCenter.value = [form.latitude, form.longitude]
-  }
-}
-
-function centerOnTaiwan() {
-  mapCenter.value = [23.97565, 120.973882]
-  mapZoom.value = 8
-}
 
 function centerOnCurrentLocation() {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        mapCenter.value = [position.coords.latitude, position.coords.longitude]
-        mapZoom.value = 15
         form.latitude = Number(position.coords.latitude.toFixed(6))
         form.longitude = Number(position.coords.longitude.toFixed(6))
       },
@@ -458,6 +398,11 @@ function centerOnCurrentLocation() {
   } else {
     alert('您的瀏覽器不支援地理定位功能')
   }
+}
+
+function centerOnTaiwan() {
+  form.latitude = 23.97565
+  form.longitude = 120.973882
 }
 
 async function handleSubmit() {
@@ -471,10 +416,12 @@ async function handleSubmit() {
       result = await placesStore.createPlace({ ...form })
     }
 
-    // 模擬成功
-    await new Promise(resolve => setTimeout(resolve, 500))
+    if (!result?.success) {
+      alert(result?.message || '儲存失敗，請稍後再試')
+      return
+    }
 
-    alert(isEdit.value ? '設施點已更新' : '設施點已建立')
+    alert(isEdit.value ? '設施點已更新' : '設施點已建立（待審核）')
     router.push('/places')
   } catch (error) {
     alert('儲存失敗，請稍後再試')

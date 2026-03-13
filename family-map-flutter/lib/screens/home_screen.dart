@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:dio/dio.dart';
 
 import '../models/place.dart';
 import '../services/place_api_service.dart';
@@ -15,7 +16,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const _facilityFilters = ['親子廁所', '親子景點燈'];
+  static const _facilityFilters = ['親子廁所', '親子景點'];
 
   final _apiService = PlaceApiService();
   final _searchController = TextEditingController();
@@ -24,11 +25,20 @@ class _HomeScreenState extends State<HomeScreen> {
   final _waypointControllers = <TextEditingController>[TextEditingController()];
   final _selectedFacilities = <String>{};
 
+  final _submitFormKey = GlobalKey<FormState>();
+  final _submitNameController = TextEditingController();
+  final _submitTypeController = TextEditingController(text: '親子景點');
+  final _submitAddressController = TextEditingController();
+  final _submitDescriptionController = TextEditingController();
+  final _submitLatController = TextEditingController();
+  final _submitLngController = TextEditingController();
+
   String get _mapboxToken => dotenv.env['MAPBOX_ACCESS_TOKEN'] ?? '';
 
   List<Place> _places = const [];
   bool _loading = true;
   String? _error;
+  bool _submittingPlace = false;
   Place? _selectedPlace;
 
   @override
@@ -43,6 +53,12 @@ class _HomeScreenState extends State<HomeScreen> {
     _searchController.dispose();
     _startController.dispose();
     _endController.dispose();
+    _submitNameController.dispose();
+    _submitTypeController.dispose();
+    _submitAddressController.dispose();
+    _submitDescriptionController.dispose();
+    _submitLatController.dispose();
+    _submitLngController.dispose();
     for (final controller in _waypointControllers) {
       controller.dispose();
     }
@@ -55,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _loading = true;
         _error = null;
       });
-      final data = await _apiService.fetchPlaces();
+      final data = await _apiService.fetchPlaces(includeAllStatus: true);
       setState(() => _places = data);
     } catch (e) {
       debugPrint('載入點位失敗: $e');
@@ -89,6 +105,11 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Family Map Flutter'),
         actions: [
+          IconButton(
+            onPressed: _showSubmitPlaceDialog,
+            icon: const Icon(Icons.add_location_alt),
+            tooltip: '新增景點',
+          ),
           IconButton(
             onPressed: _loadPlaces,
             icon: const Icon(Icons.refresh),
@@ -188,17 +209,32 @@ class _HomeScreenState extends State<HomeScreen> {
         final place = _filteredPlaces[index];
         final isSelected = _selectedPlace?.id == place.id;
 
+        final subtitle = '${place.infrastructureType}\n${place.address ?? '未提供地址'}';
+
         return ListTile(
           selected: isSelected,
-          title: Text(place.name),
-          subtitle: Text('${place.infrastructureType}\n${place.address ?? '未提供地址'}'),
+          tileColor: place.isPending ? Colors.grey.withOpacity(0.08) : null,
+          title: Text(
+            place.name,
+            style: TextStyle(color: place.isPending ? Colors.grey[700] : null),
+          ),
+          subtitle: Text(
+            subtitle,
+            style: TextStyle(color: place.isPending ? Colors.grey[600] : null),
+          ),
           isThreeLine: true,
-          trailing: place.facilities.isEmpty
-              ? null
-              : Chip(
-                  label: Text('${place.facilities.length} 項設施'),
+          trailing: place.isPending
+              ? const Chip(
+                  label: Text('待審核'),
                   visualDensity: VisualDensity.compact,
-                ),
+                  backgroundColor: Color(0xFFE5E7EB),
+                )
+              : place.facilities.isEmpty
+                  ? null
+                  : Chip(
+                      label: Text('${place.facilities.length} 項設施'),
+                      visualDensity: VisualDensity.compact,
+                    ),
           onTap: () => _handlePlaceTap(place),
         );
       },
@@ -275,6 +311,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Text('地址：${place.address ?? '未提供'}'),
               if (place.facilities.isNotEmpty) Text('設施：${place.facilities.join('、')}'),
               Text('座標：${place.latitude}, ${place.longitude}'),
+              Text('狀態：${place.isPending ? '待審核' : '正式景點'}'),
             ],
           ),
           actions: [
@@ -318,6 +355,120 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!launched && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('無法開啟導航應用程式')));
     }
+  }
+
+
+  void _showSubmitPlaceDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('新增景點（送審）'),
+          content: SizedBox(
+            width: 460,
+            child: Form(
+              key: _submitFormKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: _submitNameController,
+                      decoration: const InputDecoration(labelText: '景點名稱'),
+                      validator: (v) => (v == null || v.trim().isEmpty) ? '請輸入景點名稱' : null,
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _submitTypeController,
+                      decoration: const InputDecoration(labelText: '設施類型'),
+                      validator: (v) => (v == null || v.trim().isEmpty) ? '請輸入設施類型' : null,
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _submitAddressController,
+                      decoration: const InputDecoration(labelText: '地址'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _submitDescriptionController,
+                      decoration: const InputDecoration(labelText: '描述'),
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _submitLatController,
+                      decoration: const InputDecoration(labelText: '緯度'),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      validator: (v) => double.tryParse(v ?? '') == null ? '請輸入正確緯度' : null,
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _submitLngController,
+                      decoration: const InputDecoration(labelText: '經度'),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      validator: (v) => double.tryParse(v ?? '') == null ? '請輸入正確經度' : null,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: _submittingPlace ? null : () => Navigator.of(context).pop(),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: _submittingPlace ? null : _submitPlace,
+              child: Text(_submittingPlace ? '送出中...' : '送出審核'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _submitPlace() async {
+    if (!(_submitFormKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    setState(() => _submittingPlace = true);
+    try {
+      await _apiService.submitPlace(
+        name: _submitNameController.text.trim(),
+        infrastructureType: _submitTypeController.text.trim(),
+        address: _submitAddressController.text.trim().isEmpty ? null : _submitAddressController.text.trim(),
+        description: _submitDescriptionController.text.trim().isEmpty ? null : _submitDescriptionController.text.trim(),
+        latitude: double.parse(_submitLatController.text.trim()),
+        longitude: double.parse(_submitLngController.text.trim()),
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('景點已送出，等待審核')));
+      }
+      _clearSubmitForm();
+      await _loadPlaces();
+    } on DioException catch (e) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('送出失敗：${e.response?.data ?? e.message}')));
+    } finally {
+      if (mounted) {
+        setState(() => _submittingPlace = false);
+      }
+    }
+  }
+
+  void _clearSubmitForm() {
+    _submitNameController.clear();
+    _submitTypeController.text = '親子景點';
+    _submitAddressController.clear();
+    _submitDescriptionController.clear();
+    _submitLatController.clear();
+    _submitLngController.clear();
   }
 
   Uri _buildNavigationUri({required String origin, required String destination, required List<String> waypoints}) {
