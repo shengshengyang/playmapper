@@ -12,11 +12,12 @@ Widget buildPlatformMap(
   required List<Place> places,
   required Place? focusPlace,
   required String? mapboxAccessToken,
+  required ValueChanged<Place> onPlaceTap,
 }) {
   if (Platform.isIOS) {
     return _buildMapKit(places, focusPlace);
   }
-  return _buildMapboxTileMap(places, focusPlace, mapboxAccessToken);
+  return _buildOpenStreetMap(places, focusPlace, onPlaceTap);
 }
 
 Widget _buildMapKit(List<Place> places, Place? focusPlace) {
@@ -26,7 +27,7 @@ Widget _buildMapKit(List<Place> places, Place? focusPlace) {
         (place) => mapkit.Annotation(
           annotationId: mapkit.AnnotationId('place_${place.id}'),
           position: mapkit.LatLng(place.latitude, place.longitude),
-          infoWindow: mapkit.InfoWindow(title: place.name),
+          infoWindow: mapkit.InfoWindow(title: place.name, snippet: place.address),
         ),
       )
       .toSet();
@@ -41,14 +42,8 @@ Widget _buildMapKit(List<Place> places, Place? focusPlace) {
   );
 }
 
-Widget _buildMapboxTileMap(List<Place> places, Place? focusPlace, String? mapboxAccessToken) {
+Widget _buildOpenStreetMap(List<Place> places, Place? focusPlace, ValueChanged<Place> onPlaceTap) {
   final center = _resolveCenter(places, focusPlace);
-
-  if (mapboxAccessToken == null || mapboxAccessToken.isEmpty) {
-    return const Center(
-      child: Text('請設定 MAPBOX_ACCESS_TOKEN 才能載入 Android 地圖'),
-    );
-  }
 
   return FlutterMap(
     options: MapOptions(
@@ -57,8 +52,8 @@ Widget _buildMapboxTileMap(List<Place> places, Place? focusPlace, String? mapbox
     ),
     children: [
       TileLayer(
-        urlTemplate: 'https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/tiles/256/{z}/{x}/{y}@2x?access_token={accessToken}',
-        additionalOptions: {'accessToken': mapboxAccessToken},
+        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        userAgentPackageName: 'com.familymap.app',
       ),
       MarkerLayer(
         markers: places
@@ -67,13 +62,34 @@ Widget _buildMapboxTileMap(List<Place> places, Place? focusPlace, String? mapbox
                 point: ll.LatLng(place.latitude, place.longitude),
                 width: 44,
                 height: 44,
-                child: const Icon(Icons.location_pin, color: Colors.red, size: 34),
+                child: GestureDetector(
+                  onTap: () => onPlaceTap(place),
+                  child: Icon(
+                    _iconForType(place.infrastructureType),
+                    color: focusPlace?.id == place.id ? Colors.deepOrange : Colors.red,
+                    size: 32,
+                  ),
+                ),
               ),
             )
             .toList(),
       ),
     ],
   );
+}
+
+IconData _iconForType(String infrastructureType) {
+  switch (infrastructureType.toLowerCase()) {
+    case '親子廁所':
+      return Icons.family_restroom;
+    case '親子景點':
+      return Icons.park;
+    case '公園':
+    case 'park':
+      return Icons.park;
+    default:
+      return Icons.location_on;
+  }
 }
 
 ll.LatLng _resolveCenter(List<Place> places, Place? focusPlace) {

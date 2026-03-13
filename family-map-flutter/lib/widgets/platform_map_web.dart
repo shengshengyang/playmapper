@@ -11,14 +11,9 @@ Widget buildPlatformMap(
   required List<Place> places,
   required Place? focusPlace,
   required String? mapboxAccessToken,
+  required ValueChanged<Place> onPlaceTap,
 }) {
   final center = _resolveCenter(places, focusPlace);
-
-  if (mapboxAccessToken == null || mapboxAccessToken.isEmpty) {
-    return const Center(
-      child: Text('請設定 MAPBOX_ACCESS_TOKEN 才能載入地圖'),
-    );
-  }
 
   return FlutterMap(
     options: MapOptions(
@@ -29,40 +24,42 @@ Widget buildPlatformMap(
     ),
     children: [
       TileLayer(
-        urlTemplate: 'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token={accessToken}',
-        additionalOptions: {'accessToken': mapboxAccessToken},
+        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
         userAgentPackageName: 'com.familymap.app',
       ),
       MarkerLayer(
         markers: places
-            .map((place) => _buildPlaceMarker(place, isSelected: focusPlace?.id == place.id))
+            .map((place) => _buildPlaceMarker(place, onPlaceTap: onPlaceTap, isSelected: focusPlace?.id == place.id))
             .toList(),
       ),
     ],
   );
 }
 
-Marker _buildPlaceMarker(Place place, {bool isSelected = false}) {
+Marker _buildPlaceMarker(Place place, {required ValueChanged<Place> onPlaceTap, bool isSelected = false}) {
   final color = _getMarkerColor(place.infrastructureType);
 
   return Marker(
     point: LatLng(place.latitude, place.longitude),
     width: isSelected ? 48 : 40,
     height: isSelected ? 56 : 48,
-    child: Tooltip(
-      message: place.name,
-      preferBelow: false,
-      child: CustomPaint(
-        painter: _MarkerPainter(
-          color: color,
-          isSelected: isSelected,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.only(top: 6),
-          child: Icon(
-            _getIconForType(place.infrastructureType),
-            color: Colors.white,
-            size: isSelected ? 20 : 16,
+    child: GestureDetector(
+      onTap: () => onPlaceTap(place),
+      child: Tooltip(
+        message: place.name,
+        preferBelow: false,
+        child: CustomPaint(
+          painter: _MarkerPainter(
+            color: color,
+            isSelected: isSelected,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Icon(
+              _getIconForType(place.infrastructureType),
+              color: Colors.white,
+              size: isSelected ? 20 : 16,
+            ),
           ),
         ),
       ),
@@ -72,6 +69,10 @@ Marker _buildPlaceMarker(Place place, {bool isSelected = false}) {
 
 Color _getMarkerColor(String infrastructureType) {
   switch (infrastructureType.toLowerCase()) {
+    case '親子廁所':
+      return const Color(0xFF06B6D4);
+    case '親子景點':
+      return const Color(0xFF22C55E);
     case '公園':
     case 'park':
       return const Color(0xFF22C55E);
@@ -94,6 +95,10 @@ Color _getMarkerColor(String infrastructureType) {
 
 IconData _getIconForType(String infrastructureType) {
   switch (infrastructureType.toLowerCase()) {
+    case '親子廁所':
+      return Icons.family_restroom;
+    case '親子景點':
+      return Icons.park;
     case '公園':
     case 'park':
       return Icons.park;
@@ -121,7 +126,7 @@ LatLng _resolveCenter(List<Place> places, Place? focusPlace) {
   if (places.isNotEmpty) {
     return LatLng(places.first.latitude, places.first.longitude);
   }
-  return const LatLng(24.1477, 120.6736); // 台中市中心
+  return const LatLng(24.1477, 120.6736);
 }
 
 class _MarkerPainter extends CustomPainter {
@@ -144,14 +149,12 @@ class _MarkerPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
 
-    // 繪製陰影
     path.moveTo(w / 2, h);
     path.quadraticBezierTo(w / 4, h * 0.7, w / 8, h * 0.25);
     path.arcToPoint(Offset(w * 7 / 8, h * 0.25), radius: Radius.circular(w / 2));
     path.quadraticBezierTo(w * 3 / 4, h * 0.7, w / 2, h);
     canvas.drawPath(path.shift(const Offset(2, 2)), shadowPaint);
 
-    // 繪製 marker 主體
     path.reset();
     path.moveTo(w / 2, h);
     path.quadraticBezierTo(w / 4, h * 0.7, w / 8, h * 0.25);
@@ -159,7 +162,6 @@ class _MarkerPainter extends CustomPainter {
     path.quadraticBezierTo(w * 3 / 4, h * 0.7, w / 2, h);
     canvas.drawPath(path, paint);
 
-    // 選中狀態的外框
     if (isSelected) {
       final borderPaint = Paint()
         ..color = Colors.white

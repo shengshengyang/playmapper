@@ -9,11 +9,13 @@ class PlatformMap extends StatelessWidget {
     required this.places,
     this.focusPlace,
     this.mapboxAccessToken,
+    required this.onPlaceTap,
   });
 
   final List<Place> places;
   final Place? focusPlace;
   final String? mapboxAccessToken;
+  final ValueChanged<Place> onPlaceTap;
 
   @override
   Widget build(BuildContext context) {
@@ -22,6 +24,7 @@ class PlatformMap extends StatelessWidget {
       places: places,
       focusPlace: focusPlace,
       mapboxAccessToken: mapboxAccessToken,
+      onPlaceTap: onPlaceTap,
     );
   }
 }
