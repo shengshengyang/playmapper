@@ -12,6 +12,7 @@ Widget buildPlatformMap(
   required Place? focusPlace,
   required String? mapboxAccessToken,
   required ValueChanged<Place> onPlaceTap,
+  required void Function(double latitude, double longitude) onMapTap,
 }) {
   final center = _resolveCenter(places, focusPlace);
 
@@ -21,6 +22,7 @@ Widget buildPlatformMap(
       initialZoom: 13,
       minZoom: 10,
       maxZoom: 18,
+      onTap: (_, point) => onMapTap(point.latitude, point.longitude),
     ),
     children: [
       TileLayer(
