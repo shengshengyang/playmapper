@@ -51,6 +51,22 @@
       </div>
     </div>
 
+    <!-- 圖表區域 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <h3 class="font-semibold text-gray-800 mb-4">審核狀態分布</h3>
+        <div class="h-64">
+          <StatusChart :stats="stats" />
+        </div>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <h3 class="font-semibold text-gray-800 mb-4">本月新增</h3>
+        <div class="h-64">
+          <MonthlyChart :monthly-new="stats.monthlyNew" />
+        </div>
+      </div>
+    </div>
+
     <!-- 快捷操作 -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- 待審核列表 -->
@@ -127,30 +143,37 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useReviewsStore } from '@/stores/reviewsStore'
+import { statisticsApi } from '@/services/api'
+import StatusChart from '@/components/charts/StatusChart.vue'
+import MonthlyChart from '@/components/charts/MonthlyChart.vue'
 
 const reviewsStore = useReviewsStore()
 
 const stats = ref({
-  totalPlaces: 156,
-  pendingReview: 5,
-  approved: 142,
-  totalUsers: 89
+  totalPlaces: 0,
+  pendingReview: 0,
+  approved: 0,
+  rejected: 0,
+  totalUsers: 0,
+  monthlyNew: 0
 })
 
 const pendingPlaces = ref([])
 
-const recentActivities = ref([
-  { id: 1, type: 'approve', message: '管理員審核通過了「新月湖公園」', time: '10 分鐘前' },
-  { id: 2, type: 'create', message: '使用者提交了新景點「兒童樂園」', time: '1 小時前' },
-  { id: 3, type: 'edit', message: '管理員編輯了「科學博物館」的資訊', time: '2 小時前' },
-  { id: 4, type: 'reject', message: '管理員拒絕了「測試景點」', time: '3 小時前' },
-  { id: 5, type: 'user', message: '新使用者「test@example.com」註冊', time: '昨天' }
-])
+const recentActivities = ref([])
 
 onMounted(async () => {
+  // 獲取統計數據
+  try {
+    const response = await statisticsApi.getStats()
+    stats.value = response.data
+  } catch (error) {
+    console.error('Failed to fetch statistics:', error)
+  }
+
+  // 獲取待審核景點
   await reviewsStore.fetchPendingPlaces()
   pendingPlaces.value = reviewsStore.pendingPlaces
-  stats.value.pendingReview = pendingPlaces.value.length
 })
 
 async function quickApprove(place) {
@@ -159,6 +182,13 @@ async function quickApprove(place) {
     pendingPlaces.value = pendingPlaces.value.filter(p => p.id !== place.id)
     stats.value.pendingReview--
     stats.value.approved++
+    // 重新獲取統計數據
+    try {
+      const response = await statisticsApi.getStats()
+      stats.value = response.data
+    } catch (error) {
+      console.error('Failed to refresh statistics:', error)
+    }
   }
 }
 
@@ -168,6 +198,13 @@ async function quickReject(place) {
   if (result.success) {
     pendingPlaces.value = pendingPlaces.value.filter(p => p.id !== place.id)
     stats.value.pendingReview--
+    // 重新獲取統計數據
+    try {
+      const response = await statisticsApi.getStats()
+      stats.value = response.data
+    } catch (error) {
+      console.error('Failed to refresh statistics:', error)
+    }
   }
 }
 

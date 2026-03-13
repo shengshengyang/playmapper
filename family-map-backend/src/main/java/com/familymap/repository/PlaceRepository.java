@@ -15,6 +15,11 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
 
     List<Place> findByStatusIn(List<String> statuses);
 
+    long countByStatus(String status);
+
+    @Query("SELECT COUNT(p) FROM Place p WHERE p.createdAt >= :startOfMonth")
+    long countByCreatedAtAfter(@Param("startOfMonth") java.time.LocalDateTime startOfMonth);
+
     @Query(value = "SELECT * FROM places p WHERE p.status = :status " +
            "AND ST_DWithin(p.location::geography, ST_MakePoint(:lng, :lat)::geography, :radius)",
            nativeQuery = true)

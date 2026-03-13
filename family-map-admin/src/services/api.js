@@ -66,4 +66,9 @@ export const usersApi = {
   delete: (userId) => api.delete(`/admin/users/${userId}`)
 }
 
+// 統計 API
+export const statisticsApi = {
+  getStats: () => api.get('/admin/statistics')
+}
+
 export default api

@@ -47,12 +47,22 @@ public class UserController {
         String username = request.get("username");
         String password = request.get("password");
 
-        // TODO: 實作登入邏輯和 JWT 生成
+        // 測試模式：admin/admin123 直接返回成功
+        if ("admin".equals(username) && "admin123".equals(password)) {
+            return ResponseEntity.ok(Map.of(
+                "message", "登入成功",
+                "token", "test-admin-token",
+                "user", Map.of(
+                    "id", 1,
+                    "username", "admin",
+                    "role", "admin"
+                )
+            ));
+        }
 
-        return ResponseEntity.ok(Map.of(
-            "message", "登入成功",
-            "token", "jwt-token-placeholder",
-            "username", username
+        // TODO: 實作真實登入邏輯和 JWT 生成
+        return ResponseEntity.status(401).body(Map.of(
+            "message", "帳號或密碼錯誤"
         ));
     }
 

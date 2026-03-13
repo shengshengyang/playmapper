@@ -210,6 +210,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePlacesStore } from '@/stores/placesStore'
+import { placesApi } from '@/services/api'
 
 const router = useRouter()
 const placesStore = usePlacesStore()
@@ -219,19 +220,21 @@ const statusFilter = ref('')
 const viewingPlace = ref(null)
 const currentPage = ref(1)
 const itemsPerPage = 10
+const loading = ref(false)
 
-// 模擬資料
-const allPlaces = ref([
-  { id: 1, name: '國立自然科學博物館', address: '台中市北區館前路1號', minAge: 3, maxAge: 18, status: 'approved', rating: 4.5, reviewCount: 128, latitude: 24.1578, longitude: 120.6652, facilities: ['停車場', '餐廳', '哺集乳室'] },
-  { id: 2, name: '台中公園', address: '台中市中區公園路', minAge: 0, maxAge: 12, status: 'approved', rating: 4.2, reviewCount: 89, latitude: 24.1448, longitude: 120.6838, facilities: ['遊樂場', '廁所'] },
-  { id: 3, name: '審計新村', address: '台中市西區民生路', minAge: 6, maxAge: 18, status: 'approved', rating: 4.3, reviewCount: 256, facilities: ['停車場', '餐廳', '販賣部'] },
-  { id: 4, name: '新月湖公園', address: '台中市北屯區', minAge: 0, maxAge: 10, status: 'pending', rating: 0, reviewCount: 0, facilities: ['遊樂場', '沙坑'] },
-  { id: 5, name: '兒童樂園', address: '台中市西屯區', minAge: 2, maxAge: 12, status: 'pending', rating: 0, reviewCount: 0, facilities: ['遊樂場', '餐廳', '停車場'] },
-  { id: 6, name: '測試景點', address: '測試地址', minAge: 0, maxAge: 18, status: 'rejected', rating: 0, reviewCount: 0 },
-])
+// 從 API 獲取所有景點（包含待審核）
+const allPlaces = ref([])
 
-onMounted(() => {
-  // placesStore.fetchPlaces()
+onMounted(async () => {
+  loading.value = true
+  try {
+    const response = await placesApi.getAllStatus()
+    allPlaces.value = response.data
+  } catch (error) {
+    console.error('Failed to fetch places:', error)
+  } finally {
+    loading.value = false
+  }
 })
 
 const filteredPlaces = computed(() => {
@@ -302,9 +305,14 @@ function editPlace(place) {
 
 async function deletePlace(place) {
   if (confirm(`確定要刪除「${place.name}」嗎？此操作無法復原。`)) {
-    // const result = await placesStore.deletePlace(place.id)
-    allPlaces.value = allPlaces.value.filter(p => p.id !== place.id)
-    alert('刪除成功')
+    try {
+      await placesApi.delete(place.id)
+      allPlaces.value = allPlaces.value.filter(p => p.id !== place.id)
+      alert('刪除成功')
+    } catch (error) {
+      console.error('Failed to delete place:', error)
+      alert('刪除失敗，請稍後再試')
+    }
   }
 }
 

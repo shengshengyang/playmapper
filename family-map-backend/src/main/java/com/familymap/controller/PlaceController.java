@@ -34,6 +34,16 @@ public class PlaceController {
         return ResponseEntity.ok(dtos);
     }
 
+    @GetMapping("/all")
+    @Operation(summary = "獲取所有地點（包含待審核）")
+    public ResponseEntity<List<PlaceDTO>> getAllPlacesIncludingPending() {
+        List<Place> places = placeService.findAll();
+        List<PlaceDTO> dtos = places.stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "獲取地點詳情")
     public ResponseEntity<PlaceDTO> getPlaceById(@PathVariable Long id) {
