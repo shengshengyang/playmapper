@@ -294,6 +294,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePlacesStore } from '@/stores/placesStore'
+import { infrastructureTypesApi } from '@/services/api'
 const route = useRoute()
 const router = useRouter()
 const placesStore = usePlacesStore()
@@ -318,7 +319,7 @@ const form = reactive({
   status: 'approved'
 })
 
-const infrastructureTypeOptions = ['親子廁所', '尿布台', '哺乳室', '無障礙廁所', '休息區']
+const infrastructureTypeOptions = ref([])
 
 const facilityOptions = [
   '遊樂場',
@@ -338,7 +339,19 @@ const facilityOptions = [
   '攀爬架'
 ]
 
+async function fetchInfrastructureTypes() {
+  try {
+    const { data } = await infrastructureTypesApi.getOptions()
+    infrastructureTypeOptions.value = data.map(type => type.name)
+  } catch (error) {
+    console.error('載入設施類型失敗:', error)
+    infrastructureTypeOptions.value = ['親子廁所', '尿布台', '哺乳室', '無障礙廁所', '休息區']
+  }
+}
+
 onMounted(async () => {
+  await fetchInfrastructureTypes()
+
   if (isEdit.value) {
     // 載入景點資料
     const place = await placesStore.getPlaceById(route.params.id)

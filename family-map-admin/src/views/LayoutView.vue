@@ -78,6 +78,7 @@ const reviewsStore = useReviewsStore()
 const menuItems = computed(() => [
   { path: '/dashboard', title: '儀表板', icon: '📊' },
   { path: '/places', title: '景點管理', icon: '📍' },
+  { path: '/infrastructure-types', title: '設施類型管理', icon: '🏷️' },
   { path: '/reviews', title: '審核管理', icon: '✅', badge: reviewsStore.pendingPlaces.length || null },
   { path: '/users', title: '使用者管理', icon: '👥' }
 ])

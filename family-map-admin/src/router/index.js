@@ -41,6 +41,13 @@ const routes = [
         component: () => import('@/views/PlaceFormView.vue'),
         meta: { title: '編輯景點' }
       },
+
+      {
+        path: 'infrastructure-types',
+        name: 'InfrastructureTypes',
+        component: () => import('@/views/InfrastructureTypesView.vue'),
+        meta: { title: '設施類型管理' }
+      },
       {
         path: 'reviews',
         name: 'Reviews',
