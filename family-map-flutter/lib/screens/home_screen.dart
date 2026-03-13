@@ -18,6 +18,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   static const _facilityFilters = ['親子廁所', '親子景點'];
+  static const _mobileBreakpoint = 900.0;
 
   final _apiService = PlaceApiService();
   final _geocodingService = GeocodingService();
@@ -44,6 +45,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _resolvingCoordinates = false;
   bool _resolvingAddress = false;
   bool _submitDialogOpened = false;
+  bool _desktopPanelExpanded = true;
+  bool _mobilePanelExpanded = false;
   Place? _selectedPlace;
 
   @override
@@ -106,10 +109,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Family Map Flutter'),
+        title: const Text('Family Map Navigator'),
+        centerTitle: false,
+        scrolledUnderElevation: 0,
+        elevation: 0,
         actions: [
+          if (!_isMobileLayout(context))
+            IconButton(
+              onPressed: () => setState(() => _desktopPanelExpanded = !_desktopPanelExpanded),
+              icon: Icon(_desktopPanelExpanded ? Icons.right_panel_close : Icons.right_panel_open),
+              tooltip: _desktopPanelExpanded ? '收起側欄' : '展開側欄',
+            ),
           IconButton(
             onPressed: _showSubmitPlaceDialog,
             icon: const Icon(Icons.add_location_alt),
@@ -126,56 +141,204 @@ class _HomeScreenState extends State<HomeScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(child: Text(_error!))
-              : Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          children: [
-                            TextField(
-                              controller: _searchController,
-                              decoration: const InputDecoration(
-                                hintText: '搜尋設施名稱或地址',
-                                prefixIcon: Icon(Icons.search),
-                                border: OutlineInputBorder(),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            _buildFacilityFilter(),
-                            const SizedBox(height: 12),
-                            Expanded(
-                              child: Card(
-                                clipBehavior: Clip.hardEdge,
-                                child: PlatformMap(
-                                  places: _filteredPlaces,
-                                  focusPlace: _selectedPlace,
-                                  mapboxAccessToken: _mapboxToken,
-                                  onPlaceTap: _handlePlaceTap,
-                                  onMapTap: _handleMapTap,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Container(
-                        color: Theme.of(context).colorScheme.surfaceContainerLowest,
-                        child: Column(
-                          children: [
-                            Expanded(child: _buildPlaceList()),
-                            const Divider(height: 1),
-                            _buildRoutePlanner(),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isMobile = constraints.maxWidth < _mobileBreakpoint;
+
+                    if (isMobile) {
+                      return _buildMobileLayout();
+                    }
+
+                    return _buildDesktopLayout();
+                  },
                 ),
+    );
+  }
+
+  bool _isMobileLayout(BuildContext context) => MediaQuery.sizeOf(context).width < _mobileBreakpoint;
+
+  Widget _buildDesktopLayout() {
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Expanded(flex: 3, child: _buildMapSection()),
+          AnimatedContainer(
+            width: _desktopPanelExpanded ? 420 : 76,
+            duration: const Duration(milliseconds: 240),
+            curve: Curves.easeOut,
+            margin: const EdgeInsets.only(left: 12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+            ),
+            child: _desktopPanelExpanded ? _buildPanelContent() : _buildCollapsedPanelRail(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout() {
+    return Stack(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: _buildMapSection(),
+        ),
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+            width: double.infinity,
+            margin: const EdgeInsets.all(12),
+            constraints: BoxConstraints(
+              maxHeight: _mobilePanelExpanded ? MediaQuery.sizeOf(context).height * 0.6 : 68,
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface.withOpacity(0.96),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+              boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 12, offset: Offset(0, 2))],
+            ),
+            child: Column(
+              children: [
+                InkWell(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  onTap: () => setState(() => _mobilePanelExpanded = !_mobilePanelExpanded),
+                  child: SizedBox(
+                    height: 68,
+                    child: Row(
+                      children: [
+                        const SizedBox(width: 16),
+                        Icon(_mobilePanelExpanded ? Icons.expand_more : Icons.expand_less),
+                        const SizedBox(width: 8),
+                        Text(_mobilePanelExpanded ? '收起面板' : '展開景點與路線', style: Theme.of(context).textTheme.titleMedium),
+                        const Spacer(),
+                        FilledButton.tonalIcon(
+                          onPressed: _showSubmitPlaceDialog,
+                          icon: const Icon(Icons.add_location_alt),
+                          label: const Text('新增'),
+                        ),
+                        const SizedBox(width: 12),
+                      ],
+                    ),
+                  ),
+                ),
+                if (_mobilePanelExpanded) const Divider(height: 1),
+                if (_mobilePanelExpanded)
+                  Expanded(
+                    child: _buildPanelContent(),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMapSection() {
+    return Column(
+      children: [
+        _buildSearchCard(),
+        const SizedBox(height: 12),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(28),
+            child: Card(
+              margin: EdgeInsets.zero,
+              clipBehavior: Clip.hardEdge,
+              child: Stack(
+                children: [
+                  PlatformMap(
+                    places: _filteredPlaces,
+                    focusPlace: _selectedPlace,
+                    mapboxAccessToken: _mapboxToken,
+                    onPlaceTap: _handlePlaceTap,
+                    onMapTap: _handleMapTap,
+                  ),
+                  Positioned(
+                    top: 16,
+                    right: 16,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        child: Text('景點 ${_filteredPlaces.length} / ${_places.length}'),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSearchCard() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Column(
+        children: [
+          TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: '搜尋設施名稱或地址',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _searchController.text.isEmpty
+                  ? null
+                  : IconButton(
+                      onPressed: () => _searchController.clear(),
+                      icon: const Icon(Icons.close),
+                    ),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildFacilityFilter(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPanelContent() {
+    return Column(
+      children: [
+        Expanded(child: _buildPlaceList()),
+        const Divider(height: 1),
+        _buildRoutePlanner(),
+      ],
+    );
+  }
+
+  Widget _buildCollapsedPanelRail() {
+    return Column(
+      children: [
+        const SizedBox(height: 12),
+        IconButton(
+          onPressed: () => setState(() => _desktopPanelExpanded = true),
+          icon: const Icon(Icons.chevron_left),
+          tooltip: '展開側欄',
+        ),
+        const SizedBox(height: 8),
+        const RotatedBox(
+          quarterTurns: 3,
+          child: Text('景點列表 / 路線規劃'),
+        ),
+      ],
     );
   }
 
