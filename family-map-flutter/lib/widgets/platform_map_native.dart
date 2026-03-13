@@ -13,11 +13,12 @@ Widget buildPlatformMap(
   required Place? focusPlace,
   required String? mapboxAccessToken,
   required ValueChanged<Place> onPlaceTap,
+  required void Function(double latitude, double longitude) onMapTap,
 }) {
   if (Platform.isIOS) {
     return _buildMapKit(places, focusPlace);
   }
-  return _buildOpenStreetMap(places, focusPlace, onPlaceTap);
+  return _buildOpenStreetMap(places, focusPlace, onPlaceTap, onMapTap);
 }
 
 Widget _buildMapKit(List<Place> places, Place? focusPlace) {
@@ -42,13 +43,19 @@ Widget _buildMapKit(List<Place> places, Place? focusPlace) {
   );
 }
 
-Widget _buildOpenStreetMap(List<Place> places, Place? focusPlace, ValueChanged<Place> onPlaceTap) {
+Widget _buildOpenStreetMap(
+  List<Place> places,
+  Place? focusPlace,
+  ValueChanged<Place> onPlaceTap,
+  void Function(double latitude, double longitude) onMapTap,
+) {
   final center = _resolveCenter(places, focusPlace);
 
   return FlutterMap(
     options: MapOptions(
       initialCenter: center,
       initialZoom: 13,
+      onTap: (_, point) => onMapTap(point.latitude, point.longitude),
     ),
     children: [
       TileLayer(

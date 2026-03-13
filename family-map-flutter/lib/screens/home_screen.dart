@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
 
 import '../models/place.dart';
+import '../services/geocoding_service.dart';
 import '../services/place_api_service.dart';
 import '../widgets/platform_map.dart';
 
@@ -19,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   static const _facilityFilters = ['親子廁所', '親子景點'];
 
   final _apiService = PlaceApiService();
+  final _geocodingService = GeocodingService();
   final _searchController = TextEditingController();
   final _startController = TextEditingController();
   final _endController = TextEditingController();
@@ -39,6 +41,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _loading = true;
   String? _error;
   bool _submittingPlace = false;
+  bool _resolvingCoordinates = false;
+  bool _resolvingAddress = false;
+  bool _submitDialogOpened = false;
   Place? _selectedPlace;
 
   @override
@@ -148,6 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   focusPlace: _selectedPlace,
                                   mapboxAccessToken: _mapboxToken,
                                   onPlaceTap: _handlePlaceTap,
+                                  onMapTap: _handleMapTap,
                                 ),
                               ),
                             ),
@@ -357,8 +363,99 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _handleMapTap(double latitude, double longitude) async {
+    if (!_submitDialogOpened) {
+      return;
+    }
+
+    _submitLatController.text = latitude.toStringAsFixed(6);
+    _submitLngController.text = longitude.toStringAsFixed(6);
+    await _reverseGeocode(latitude: latitude, longitude: longitude, fromMapTap: true);
+  }
+
+  Future<void> _geocodeAddress() async {
+    if (_resolvingCoordinates) {
+      return;
+    }
+
+    final address = _submitAddressController.text.trim();
+    if (address.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('請先輸入地址')));
+      return;
+    }
+
+    setState(() => _resolvingCoordinates = true);
+    try {
+      final result = await _geocodingService.geocodeAddress(address);
+      if (result == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('找不到對應座標')));
+        }
+        return;
+      }
+
+      _submitLatController.text = result.latitude.toStringAsFixed(6);
+      _submitLngController.text = result.longitude.toStringAsFixed(6);
+      _submitAddressController.text = result.address;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已帶入經緯度')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('地址轉換失敗：$e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _resolvingCoordinates = false);
+      }
+    }
+  }
+
+  Future<void> _reverseGeocodeFromCoordinates() async {
+    final lat = double.tryParse(_submitLatController.text.trim());
+    final lng = double.tryParse(_submitLngController.text.trim());
+    if (lat == null || lng == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('請先輸入正確經緯度')));
+      return;
+    }
+
+    await _reverseGeocode(latitude: lat, longitude: lng);
+  }
+
+  Future<void> _reverseGeocode({required double latitude, required double longitude, bool fromMapTap = false}) async {
+    if (_resolvingAddress) {
+      return;
+    }
+
+    setState(() => _resolvingAddress = true);
+    try {
+      final address = await _geocodingService.reverseGeocode(latitude: latitude, longitude: longitude);
+      if (address == null || address.trim().isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('找不到對應地址')));
+        }
+        return;
+      }
+
+      _submitAddressController.text = address;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(fromMapTap ? '已由地圖點位帶入地址與座標' : '已帶入地址')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('座標轉換失敗：$e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _resolvingAddress = false);
+      }
+    }
+  }
 
   void _showSubmitPlaceDialog() {
+    _submitDialogOpened = true;
     showDialog<void>(
       context: context,
       builder: (context) {
@@ -372,6 +469,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('可直接點地圖自動填入座標與地址'),
+                    ),
+                    const SizedBox(height: 8),
                     TextFormField(
                       controller: _submitNameController,
                       decoration: const InputDecoration(labelText: '景點名稱'),
@@ -387,6 +489,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     TextFormField(
                       controller: _submitAddressController,
                       decoration: const InputDecoration(labelText: '地址'),
+                    ),
+                    const SizedBox(height: 6),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: _geocodeAddress,
+                        icon: const Icon(Icons.travel_explore),
+                        label: const Text('地址轉經緯度'),
+                      ),
                     ),
                     const SizedBox(height: 8),
                     TextFormField(
@@ -408,6 +519,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       validator: (v) => double.tryParse(v ?? '') == null ? '請輸入正確經度' : null,
                     ),
+                    const SizedBox(height: 6),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: _reverseGeocodeFromCoordinates,
+                        icon: const Icon(Icons.pin_drop),
+                        label: const Text('經緯度轉地址'),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -425,7 +545,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         );
       },
-    );
+    ).then((_) => _submitDialogOpened = false);
   }
 
   Future<void> _submitPlace() async {
