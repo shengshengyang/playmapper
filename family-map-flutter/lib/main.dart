@@ -30,7 +30,7 @@ class FamilyMapApp extends StatelessWidget {
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFFF2F6FA),
         appBarTheme: const AppBarTheme(backgroundColor: Color(0xFFF2F6FA)),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           elevation: 0,
           color: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),

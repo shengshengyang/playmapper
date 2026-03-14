@@ -122,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
           if (!_isMobileLayout(context))
             IconButton(
               onPressed: () => setState(() => _desktopPanelExpanded = !_desktopPanelExpanded),
-              icon: Icon(_desktopPanelExpanded ? Icons.right_panel_close : Icons.right_panel_open),
+              icon: Icon(_desktopPanelExpanded ? Icons.menu_open : Icons.menu),
               tooltip: _desktopPanelExpanded ? '收起側欄' : '展開側欄',
             ),
           IconButton(
