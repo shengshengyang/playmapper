@@ -1,7 +1,8 @@
 import 'package:flutter/widgets.dart';
 
 import '../models/place.dart';
-import 'platform_map_native.dart' if (dart.library.html) 'platform_map_web.dart';
+import 'platform_map_native.dart'
+    if (dart.library.html) 'platform_map_web.dart';
 
 class PlatformMap extends StatelessWidget {
   const PlatformMap({

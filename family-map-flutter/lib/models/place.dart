@@ -13,7 +13,7 @@ class Place {
     this.status = 'approved',
   });
 
-  final int id;
+  final String id;
   final String name;
   final double latitude;
   final double longitude;
@@ -26,20 +26,28 @@ class Place {
   final String status;
 
   bool get isPending => status.toLowerCase() == 'pending';
+  bool get isApproved => !isPending;
+  String get statusLabel => isPending ? '待審核' : '已審核';
 
   factory Place.fromJson(Map<String, dynamic> json) {
+    final rawStatus = json['reviewStatus'] ?? json['status'] ?? 'approved';
+
     return Place(
-      id: json['id'] as int,
-      name: json['name'] as String? ?? '未命名設施',
+      id: '${json['id'] ?? ''}',
+      name: json['name'] as String? ?? '未命名景點',
       latitude: (json['latitude'] as num?)?.toDouble() ?? 0,
       longitude: (json['longitude'] as num?)?.toDouble() ?? 0,
-      infrastructureType: json['infrastructureType'] as String? ?? '未知類型',
+      infrastructureType:
+          json['infrastructureType'] as String? ??
+          json['type'] as String? ??
+          '一般設施',
       address: json['address'] as String?,
       description: json['description'] as String?,
-      facilities: (json['facilities'] as List?)?.map((e) => '$e').toList() ?? const [],
+      facilities:
+          (json['facilities'] as List?)?.map((e) => '$e').toList() ?? const [],
       minAge: json['minAge'] as int?,
       maxAge: json['maxAge'] as int?,
-      status: json['status'] as String? ?? 'approved',
+      status: '$rawStatus',
     );
   }
 }

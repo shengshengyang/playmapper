@@ -14,25 +14,19 @@ class GeocodingResult {
 
 class GeocodingService {
   GeocodingService()
-      : _dio = Dio(
-          BaseOptions(
-            baseUrl: 'https://nominatim.openstreetmap.org',
-            headers: const {
-              'User-Agent': 'family-map-flutter/1.0',
-            },
-          ),
-        );
+    : _dio = Dio(
+        BaseOptions(
+          baseUrl: 'https://nominatim.openstreetmap.org',
+          headers: const {'User-Agent': 'family-map-flutter/1.0'},
+        ),
+      );
 
   final Dio _dio;
 
   Future<GeocodingResult?> geocodeAddress(String address) async {
     final response = await _dio.get<List<dynamic>>(
       '/search',
-      queryParameters: {
-        'q': address,
-        'format': 'jsonv2',
-        'limit': 1,
-      },
+      queryParameters: {'q': address, 'format': 'jsonv2', 'limit': 1},
     );
 
     final list = response.data;
@@ -48,14 +42,13 @@ class GeocodingService {
     );
   }
 
-  Future<String?> reverseGeocode({required double latitude, required double longitude}) async {
+  Future<String?> reverseGeocode({
+    required double latitude,
+    required double longitude,
+  }) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '/reverse',
-      queryParameters: {
-        'lat': latitude,
-        'lon': longitude,
-        'format': 'jsonv2',
-      },
+      queryParameters: {'lat': latitude, 'lon': longitude, 'format': 'jsonv2'},
     );
 
     return response.data?['display_name'] as String?;

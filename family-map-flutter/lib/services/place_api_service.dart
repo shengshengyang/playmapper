@@ -2,48 +2,51 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import '../data/mock_map_places.dart';
 import '../models/place.dart';
 
 class PlaceApiService {
   PlaceApiService({Dio? dio, String? baseUrl})
-      : _dio = dio ??
-            Dio(
-              BaseOptions(
-                baseUrl: baseUrl ?? dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080',
-                connectTimeout: const Duration(seconds: 10),
-                receiveTimeout: const Duration(seconds: 10),
-              ),
-            );
+    : _dio =
+          dio ??
+          Dio(
+            BaseOptions(
+              baseUrl:
+                  baseUrl ??
+                  dotenv.env['API_BASE_URL'] ??
+                  'http://localhost:8080',
+              connectTimeout: const Duration(seconds: 10),
+              receiveTimeout: const Duration(seconds: 10),
+            ),
+          );
 
   final Dio _dio;
 
   Future<List<Place>> fetchPlaces({bool includeAllStatus = false}) async {
     try {
       final endpoint = includeAllStatus ? '/places/all' : '/places';
-      debugPrint('Fetching places from: ${_dio.options.baseUrl}$endpoint');
       final response = await _dio.get<dynamic>(endpoint);
-      debugPrint('Response status: ${response.statusCode}');
-      debugPrint('Response data type: ${response.data.runtimeType}');
-      debugPrint('Response data: ${response.data}');
-
-      final List<dynamic> data;
-      if (response.data is List) {
-        data = response.data as List<dynamic>;
-      } else if (response.data is Map && response.data['data'] != null) {
-        data = response.data['data'] as List<dynamic>;
-      } else {
-        data = [];
-      }
-
-      return data
-          .whereType<Map<String, dynamic>>()
-          .map(Place.fromJson)
-          .where((place) => place.latitude != 0 && place.longitude != 0)
-          .toList();
+      return _decodePlaces(response.data);
     } on DioException catch (e) {
-      debugPrint('DioException: ${e.type} - ${e.message}');
-      debugPrint('Response: ${e.response?.data}');
+      debugPrint('fetchPlaces failed: ${e.message}');
       rethrow;
+    }
+  }
+
+  Future<List<Place>> fetchMapMarkers() async {
+    try {
+      final response = await _dio.get<dynamic>('/places/map-markers');
+      final places = _decodePlaces(response.data);
+      if (places.isEmpty) {
+        debugPrint(
+          'Map markers endpoint returned empty data. Using Taichung mock places.',
+        );
+        return getTaichungMockPlaces();
+      }
+      return places;
+    } on DioException catch (e) {
+      debugPrint('fetchMapMarkers failed: ${e.message}');
+      return getTaichungMockPlaces();
     }
   }
 
@@ -71,6 +74,7 @@ class PlaceApiService {
     if (payload is Map<String, dynamic>) {
       return Place.fromJson(payload);
     }
+
     throw DioException(
       requestOptions: response.requestOptions,
       response: response,
@@ -78,4 +82,20 @@ class PlaceApiService {
     );
   }
 
+  List<Place> _decodePlaces(dynamic payload) {
+    final List<dynamic> data;
+    if (payload is List) {
+      data = payload;
+    } else if (payload is Map && payload['data'] is List) {
+      data = payload['data'] as List<dynamic>;
+    } else {
+      data = const [];
+    }
+
+    return data
+        .whereType<Map<String, dynamic>>()
+        .map(Place.fromJson)
+        .where((place) => place.latitude != 0 && place.longitude != 0)
+        .toList();
+  }
 }

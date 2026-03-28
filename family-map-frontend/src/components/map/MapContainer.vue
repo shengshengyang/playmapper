@@ -6,7 +6,13 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import L from 'leaflet'
 import { useMapStore } from '@/stores/mapStore'
-import { createPlaceIcon, createSelectedIcon, getColorByAge } from '@/services/mapService'
+import {
+  createPlaceIcon,
+  createSelectedIcon,
+  getColorByAge,
+  getPlaceStatusLabel,
+  getPlaceTypeLabel
+} from '@/services/mapService'
 
 const props = defineProps({
   center: {
@@ -45,28 +51,23 @@ watch(() => props.places, () => {
 }, { deep: true })
 
 function initMap() {
-  // 初始化地圖
   map.value = L.map(mapContainer.value, {
     center: props.center,
     zoom: props.zoom,
     zoomControl: true
   })
 
-  // 添加圖層（OpenStreetMap）
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     maxZoom: 19
   }).addTo(map.value)
 
-  // 建立標記圖層
   markersLayer.value = L.layerGroup().addTo(map.value)
 
-  // 點擊事件
   map.value.on('click', (e) => {
     emit('map-click', { lat: e.latlng.lat, lng: e.latlng.lng })
   })
 
-  // 更新標記
   updateMarkers()
 }
 
@@ -80,17 +81,26 @@ function updateMarkers() {
 
     const color = getColorByAge(place.minAge, place.maxAge)
     const icon = place.id === mapStore.selectedPlaceId
-      ? createSelectedIcon()
-      : createPlaceIcon(color)
+      ? createSelectedIcon(place)
+      : createPlaceIcon({
+        color,
+        infrastructureType: place.infrastructureType,
+        reviewStatus: place.reviewStatus
+      })
 
     const marker = L.marker([place.latitude, place.longitude], { icon })
       .addTo(markersLayer.value)
 
-    // 彈出視窗
     marker.bindPopup(`
-      <div class="p-2 min-w-[200px]">
+      <div class="p-2 min-w-[220px]">
         <h3 class="font-bold text-lg">${place.name}</h3>
         <p class="text-gray-600 text-sm mt-1">${place.address || ''}</p>
+        <div class="mt-2 text-xs text-gray-500">
+          類型：${getPlaceTypeLabel(place.infrastructureType)}
+        </div>
+        <div class="mt-1 text-xs ${place.reviewStatus === 'pending' ? 'text-amber-600' : 'text-emerald-600'}">
+          狀態：${getPlaceStatusLabel(place.reviewStatus)}
+        </div>
         <div class="flex items-center mt-2 text-sm">
           <span class="text-yellow-500">★</span>
           <span class="ml-1">${place.rating || 0}</span>
@@ -108,7 +118,6 @@ function updateMarkers() {
     })
   })
 
-  // 自動調整視野
   if (props.places.length > 0) {
     const bounds = L.latLngBounds(
       props.places

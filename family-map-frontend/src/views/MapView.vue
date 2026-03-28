@@ -39,6 +39,14 @@
             找到 <span class="font-semibold text-neutral-700">{{ filteredPlaces.length }}</span> 個設施點
           </span>
         </div>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div class="rounded-lg bg-emerald-50 text-emerald-700 px-2 py-1.5 border border-emerald-200">
+            已審核：{{ approvedCount }}
+          </div>
+          <div class="rounded-lg bg-amber-50 text-amber-700 px-2 py-1.5 border border-amber-200">
+            待審核：{{ pendingCount }}
+          </div>
+        </div>
       </div>
 
       <!-- 景點列表 -->
@@ -75,6 +83,13 @@
         :zoom="13"
         @place-click="selectPlace"
       />
+
+      <div class="absolute bottom-5 left-5 bg-white/95 backdrop-blur rounded-xl shadow-sm border border-neutral-200 px-3 py-2 text-xs space-y-1.5">
+        <p class="font-semibold text-neutral-700">圖例（台中測試點）</p>
+        <p class="text-emerald-700">實線圖標：已審核景點</p>
+        <p class="text-amber-700">虛線圖標：待審核景點</p>
+        <p class="text-neutral-600">圖示代表不同設施類型</p>
+      </div>
 
       <!-- 地圖控制按鈕 -->
       <div class="absolute top-3 right-3 flex flex-col gap-2">
@@ -216,6 +231,10 @@ const filteredPlaces = computed(() => {
 
   return places
 })
+
+
+const approvedCount = computed(() => filteredPlaces.value.filter(place => place.reviewStatus !== 'pending').length)
+const pendingCount = computed(() => filteredPlaces.value.filter(place => place.reviewStatus === 'pending').length)
 
 function selectPlace(place) {
   selectedPlace.value = place

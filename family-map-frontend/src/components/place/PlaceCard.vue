@@ -15,6 +15,13 @@
         <Image class="w-8 h-8 text-neutral-300" />
       </div>
 
+      <div
+        class="absolute top-2.5 left-2.5 px-2 py-1 rounded-md text-xs font-semibold"
+        :class="statusClass"
+      >
+        {{ statusLabel }}
+      </div>
+
       <!-- 評分標籤 -->
       <div v-if="place.rating" class="absolute top-2.5 right-2.5 bg-white/95 px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
         <Star class="w-3 h-3 text-amber-500 fill-amber-500" />
@@ -24,21 +31,17 @@
 
     <!-- 內容區域 -->
     <div class="p-3.5">
-      <!-- 設施點名稱 -->
       <h3 class="font-semibold text-neutral-800 truncate">
         {{ place.name }}
       </h3>
       <p class="text-primary-600 text-xs mt-1">{{ place.infrastructureType || "一般設施" }}</p>
 
-      <!-- 地址 -->
       <p class="text-neutral-500 text-sm mt-1 truncate flex items-center gap-1">
         <MapPin class="w-3.5 h-3.5 flex-shrink-0" />
         <span class="truncate">{{ place.address || '尚未提供地址' }}</span>
       </p>
 
-      <!-- 資訊標籤 -->
       <div class="flex items-center justify-between mt-3">
-        <!-- 設施類型 -->
         <div class="flex items-center gap-1.5">
           <Users class="w-3.5 h-3.5 text-neutral-400" />
           <span class="badge-neutral text-xs">
@@ -46,14 +49,12 @@
           </span>
         </div>
 
-        <!-- 建議時間 -->
         <div class="flex items-center gap-1 text-neutral-400 text-xs">
           <Clock class="w-3.5 h-3.5" />
           <span>{{ place.suggestedDurationMinutes || 60 }} 分鐘</span>
         </div>
       </div>
 
-      <!-- 設施標籤 -->
       <div v-if="place.facilities && place.facilities.length > 0" class="flex flex-wrap gap-1.5 mt-3">
         <span
           v-for="facility in place.facilities.slice(0, 3)"
@@ -74,9 +75,10 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { Image, Star, MapPin, Users, Clock } from 'lucide-vue-next'
 
-defineProps({
+const props = defineProps({
   place: {
     type: Object,
     required: true
@@ -84,4 +86,13 @@ defineProps({
 })
 
 defineEmits(['click'])
+
+const statusLabel = computed(() => props.place.reviewStatus === 'pending' ? '待審核' : '已審核')
+
+const statusClass = computed(() => {
+  if (props.place.reviewStatus === 'pending') {
+    return 'bg-amber-100 text-amber-700 border border-amber-300'
+  }
+  return 'bg-emerald-100 text-emerald-700 border border-emerald-300'
+})
 </script>

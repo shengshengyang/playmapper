@@ -37,6 +37,8 @@ api.interceptors.response.use(
 // 景點 API
 export const placesApi = {
   getAll: () => api.get('/places'),
+  // 地圖點位專用端點（預留給後端，需包含 reviewStatus / infrastructureType）
+  getMapMarkers: () => api.get('/places/map-markers'),
   getById: (id) => api.get(`/places/${id}`),
   getNearby: (lat, lng, radius, minAge, maxAge) =>
     api.get('/places/nearby', { params: { lat, lng, radius, minAge, maxAge } }),
